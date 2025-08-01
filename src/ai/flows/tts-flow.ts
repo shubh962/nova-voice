@@ -26,13 +26,19 @@ const ttsFlow = ai.defineFlow(
 
     if (keys.length === 0) {
       // Let googleAI plugin handle the case where no key is provided (e.g. from default env var)
+      // by not providing an API key at all.
       keys.push(''); 
     }
-
-    for (const key of keys) {
+    
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
       try {
+        const model = key 
+            ? googleAI('gemini-2.5-flash-preview-tts', { apiKey: key })
+            : 'googleai/gemini-2.5-flash-preview-tts';
+        
         const { media } = await ai.generate({
-          model: googleAI('googleai/gemini-2.5-flash-preview-tts', { apiKey: key }),
+          model: model,
           config: {
             responseModalities: ['AUDIO'],
             speechConfig: {
@@ -59,16 +65,21 @@ const ttsFlow = ai.defineFlow(
         };
       } catch (error: any) {
         if (error.message && (error.message.includes('429 Too Many Requests') || error.message.includes('QuotaFailure'))) {
+          console.log(`API key ending with ...${key ? key.slice(-4) : 'DEFAULT'} failed with quota error. Trying next key.`);
+          if (i === keys.length - 1) {
+            // This was the last key, re-throw the error
+            throw new Error('ALL_KEYS_EXHAUSTED');
+          }
           // This key is exhausted, try the next one
-          console.log(`API key ending with ...${key.slice(-4)} failed with quota error. Trying next key.`);
           continue;
         }
         // For other errors, re-throw them
         throw error;
       }
     }
-
-    // If all keys are exhausted
-    throw new Error('ALL_KEYS_EXHAUSTED');
+    
+    // This should not be reached if there's at least one key (even empty for default)
+    // but as a fallback.
+    throw new Error('No API keys were available to process the request.');
   }
 );
