@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Volume2, Disc3, Code } from 'lucide-react';
+import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast"
 import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
+import { Badge } from '@/components/ui/badge';
 
 const HINDI_VOICES = [
   { id: 'Algenib', name: 'Shubham' },
@@ -20,6 +21,8 @@ const HINDI_VOICES = [
   { id: 'Umbriel', name: 'Malti' },
 ];
 const ENGLISH_VOICES = ['Rasalgethi', 'Sadachbia', 'Vindemiatrix', 'Zubenelgenubi'];
+const CONVERSION_COST = 250;
+const INITIAL_COINS = 500;
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
@@ -30,12 +33,23 @@ export default function BhashaVoicePage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>(HINDI_VOICES[0].id);
   const [speechRate, setSpeechRate] = useState(1);
+  const [coins, setCoins] = useState(INITIAL_COINS);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
   const handleConvert = useCallback(async (playAfter = false) => {
     if (!text) return;
+
+    if (coins < CONVERSION_COST) {
+      toast({
+        variant: "destructive",
+        title: "Not enough coins",
+        description: `You need ${CONVERSION_COST} coins to convert text.`,
+      });
+      return;
+    }
+
     setIsConverting(true);
     setAudioUrl(null);
     try {
@@ -44,12 +58,17 @@ export default function BhashaVoicePage() {
         voice: selectedVoiceName,
         lang: language
       });
+
+      const newCoinBalance = coins - CONVERSION_COST;
+      setCoins(newCoinBalance);
+      localStorage.setItem('bhasha-voice-coins', newCoinBalance.toString());
+
       if (response.audio) {
         setAudioUrl(response.audio);
         if (!playAfter) {
             toast({
               title: "Conversion Successful",
-              description: "Your text has been converted to audio.",
+              description: `Deducted ${CONVERSION_COST} coins.`,
             });
         }
         if (playAfter) {
@@ -83,7 +102,7 @@ export default function BhashaVoicePage() {
     } finally {
       setIsConverting(false);
     }
-  }, [text, language, selectedVoiceName, toast, speechRate]);
+  }, [text, language, selectedVoiceName, toast, speechRate, coins]);
 
   const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
@@ -104,8 +123,13 @@ export default function BhashaVoicePage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Set dark theme by default
     document.documentElement.classList.add('dark');
+    const savedCoins = localStorage.getItem('bhasha-voice-coins');
+    if (savedCoins !== null) {
+      setCoins(parseInt(savedCoins, 10));
+    } else {
+      localStorage.setItem('bhasha-voice-coins', INITIAL_COINS.toString());
+    }
   }, []);
 
   useEffect(() => {
@@ -132,7 +156,6 @@ export default function BhashaVoicePage() {
       audioRef.current.playbackRate = speechRate;
     }
   };
-
 
   const handleDownload = useCallback(() => {
     if (!audioUrl) return;
@@ -165,9 +188,11 @@ export default function BhashaVoicePage() {
           title: 'BhashaVoice Speech',
           text: text,
         });
-      } catch (error) {
-        console.error('Error sharing:', error);
-        fallbackShare();
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+          fallbackShare();
+        }
       }
     } else {
       fallbackShare();
@@ -177,6 +202,8 @@ export default function BhashaVoicePage() {
   const voicesForLanguage = language === 'hi-IN' 
     ? HINDI_VOICES 
     : ENGLISH_VOICES.map(name => ({ id: name, name: name }));
+
+  const hasEnoughCoins = coins >= CONVERSION_COST;
 
   if (!isMounted) return null;
 
@@ -190,6 +217,13 @@ export default function BhashaVoicePage() {
               <CardTitle className="text-5xl font-headline font-bold text-card-foreground">BhashaVoice</CardTitle>
             </div>
             <CardDescription className="text-muted-foreground text-lg">Your Indian accent text-to-speech companion.</CardDescription>
+            <div className="flex justify-center items-center gap-4 pt-2">
+                <Badge variant="secondary">Free Tier</Badge>
+                <div className="flex items-center gap-2">
+                    <Coins className="h-5 w-5 text-yellow-400" />
+                    <span className="font-bold text-lg text-foreground">{coins}</span>
+                </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6 px-4 md:px-8">
             <Textarea
@@ -269,15 +303,15 @@ export default function BhashaVoicePage() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 md:gap-4 p-4 md:p-8">
-            <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 transition-all">
+            <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all disabled:from-pink-500/50 disabled:to-purple-600/50">
               {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
-              {isConverting ? 'Converting...' : 'Convert'}
+              {isConverting ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
             </Button>
             <Button 
               onClick={handlePlayPause} 
               size="lg" 
               disabled={!text || isConverting} 
-              className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all"
+              className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 transition-all"
             >
               {isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
               {isPlaying ? 'Pause' : 'Play'}
@@ -301,3 +335,6 @@ export default function BhashaVoicePage() {
       </footer>
     </div>
   );
+}
+
+    
