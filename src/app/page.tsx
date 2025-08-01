@@ -96,17 +96,26 @@ export default function BhashaVoicePage() {
       } else {
         throw new Error("Audio data not received.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error converting text to speech:', error);
-      toast({
-        variant: "destructive",
-        title: "Conversion Failed",
-        description: "Could not convert text to speech.",
-      });
+      if (error.message && error.message.includes('429 Too Many Requests')) {
+        toast({
+          variant: "destructive",
+          title: "Quota Exceeded",
+          description: "You've hit the daily free limit for speech generation. Please try again tomorrow.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Conversion Failed",
+          description: "Could not convert text to speech.",
+        });
+      }
     } finally {
       setIsConverting(false);
     }
   }, [text, language, selectedVoiceName, toast, speechRate]);
+
 
   const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
