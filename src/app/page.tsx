@@ -35,7 +35,7 @@ const PLANS = [
       conversions: '~20',
       bestFor: 'Beginners / Casual use',
       featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://rzp.io/l/starter-plan'
     },
     {
       name: 'Pro',
@@ -46,7 +46,7 @@ const PLANS = [
       conversions: '~72',
       bestFor: 'Regular Creators',
       featured: true,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://rzp.io/l/pro-plan'
     },
     {
       name: 'Business',
@@ -57,7 +57,7 @@ const PLANS = [
       conversions: '~160',
       bestFor: 'Small Teams / Marketers',
       featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://rzp.io/l/business-plan'
     },
     {
       name: 'Ultimate',
@@ -68,7 +68,7 @@ const PLANS = [
       conversions: '~360',
       bestFor: 'Power Users & Agencies',
       featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://rzp.io/l/ultimate-plan'
     },
   ];
 
@@ -436,4 +436,6 @@ export default function BhashaVoicePage() {
   );
 
     
+    
+
     
