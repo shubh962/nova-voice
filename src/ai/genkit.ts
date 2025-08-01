@@ -5,5 +5,4 @@ import {googleAI} from '@genkit-ai/googleai';
 // We will manage multiple keys within the flow itself.
 export const ai = genkit({
   plugins: [googleAI()],
-  model: 'googleai/gemini-2.0-flash',
 });
