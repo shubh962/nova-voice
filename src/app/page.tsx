@@ -252,6 +252,10 @@ export default function BhashaVoicePage() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 md:gap-4 p-4 md:p-8">
+            <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 transition-all">
+              {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
+              {isConverting ? 'Converting...' : 'Convert'}
+            </Button>
             <Button 
               onClick={handlePlayPause} 
               size="lg" 
@@ -260,10 +264,6 @@ export default function BhashaVoicePage() {
             >
               {isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
               {isPlaying ? 'Pause' : 'Play'}
-            </Button>
-            <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 transition-all">
-              {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
-              {isConverting ? 'Converting...' : 'Convert'}
             </Button>
             <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-accent text-accent hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
               <Download className="mr-2 h-5 w-5" />
