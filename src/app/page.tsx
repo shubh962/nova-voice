@@ -13,8 +13,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
 
-const HINDI_VOICES = ['Algenib', 'Achernar', 'en-IN-Wavenet-A', 'en-IN-Wavenet-D'];
-const ENGLISH_VOICES = ['Shaula', 'Gemma', 'en-IN-Wavenet-B', 'en-IN-Wavenet-C'];
+const HINDI_VOICES = ['Algenib', 'Achernar', 'Schedar', 'Umbriel'];
+const ENGLISH_VOICES = ['Rasalgethi', 'Sadachbia', 'Vindemiatrix', 'Zubenelgenubi'];
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
@@ -151,8 +151,8 @@ export default function BhashaVoicePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-grow w-full flex flex-col items-center justify-center bg-background text-foreground p-4 sm:p-6 md:p-8">
+    <div className="flex flex-col min-h-screen bg-background">
+      <main className="flex-grow w-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
         <Card className="w-full max-w-3xl shadow-2xl bg-card rounded-xl">
           <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-3 mb-2">
@@ -162,16 +162,6 @@ export default function BhashaVoicePage() {
             <CardDescription className="text-muted-foreground text-lg">Your Indian accent text-to-speech companion.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 px-4 md:px-8">
-            {!isMounted && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Feature Not Fully Supported</AlertTitle>
-                <AlertDescription>
-                  Your browser may not support all features. Audio generation will work, but real-time playback may be unavailable.
-                </AlertDescription>
-              </Alert>
-            )}
-
             <Textarea
               placeholder="Type or paste your text here..."
               value={text}
