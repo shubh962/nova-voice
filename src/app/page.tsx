@@ -13,7 +13,12 @@ import { useToast } from "@/hooks/use-toast"
 import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
 
-const HINDI_VOICES = ['Algenib', 'Achernar', 'Schedar', 'Umbriel'];
+const HINDI_VOICES = [
+  { id: 'Algenib', name: 'Shubham' },
+  { id: 'Achernar', name: 'Swati' },
+  { id: 'Schedar', name: 'Satish' },
+  { id: 'Umbriel', name: 'Malti' },
+];
 const ENGLISH_VOICES = ['Rasalgethi', 'Sadachbia', 'Vindemiatrix', 'Zubenelgenubi'];
 
 export default function BhashaVoicePage() {
@@ -23,7 +28,7 @@ export default function BhashaVoicePage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [selectedVoiceName, setSelectedVoiceName] = useState<string>(HINDI_VOICES[0]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState<string>(HINDI_VOICES[0].id);
   const [speechRate, setSpeechRate] = useState(1);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -38,7 +43,7 @@ export default function BhashaVoicePage() {
   useEffect(() => {
     setAudioUrl(null);
     if (language === 'hi-IN') {
-      setSelectedVoiceName(HINDI_VOICES[0]);
+      setSelectedVoiceName(HINDI_VOICES[0].id);
     } else {
       setSelectedVoiceName(ENGLISH_VOICES[0]);
     }
@@ -59,22 +64,6 @@ export default function BhashaVoicePage() {
       audioRef.current.playbackRate = speechRate;
     }
   };
-
-  const handlePlayPause = useCallback(async () => {
-    if (isPlaying) {
-      audioRef.current?.pause();
-      setIsPlaying(false);
-      return;
-    }
-
-    if (audioUrl && audioRef.current) {
-        applyPlaybackRate();
-        audioRef.current.play();
-        setIsPlaying(true);
-    } else {
-      await handleConvert(true);
-    }
-  }, [isPlaying, audioUrl, speechRate]);
 
   const handleConvert = useCallback(async (playAfter = false) => {
     if (!text) return;
@@ -119,6 +108,22 @@ export default function BhashaVoicePage() {
     }
   }, [text, language, selectedVoiceName, toast, speechRate]);
 
+  const handlePlayPause = useCallback(async () => {
+    if (isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    if (audioUrl && audioRef.current) {
+        applyPlaybackRate();
+        audioRef.current.play();
+        setIsPlaying(true);
+    } else {
+      await handleConvert(true);
+    }
+  }, [isPlaying, audioUrl, speechRate, handleConvert]);
+
   const handleDownload = useCallback(() => {
     if (!audioUrl) return;
     const link = document.createElement('a');
@@ -159,7 +164,9 @@ export default function BhashaVoicePage() {
     }
   }, [text, toast]);
   
-  const voicesForLanguage = language === 'hi-IN' ? HINDI_VOICES : ENGLISH_VOICES;
+  const voicesForLanguage = language === 'hi-IN' 
+    ? HINDI_VOICES 
+    : ENGLISH_VOICES.map(name => ({ id: name, name: name }));
 
   if (!isMounted) return null;
 
@@ -210,8 +217,8 @@ export default function BhashaVoicePage() {
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border rounded-lg">
                     {voicesForLanguage.map((voice) => (
-                      <SelectItem key={voice} value={voice} className="text-popover-foreground">
-                        {voice}
+                      <SelectItem key={voice.id} value={voice.id} className="text-popover-foreground">
+                        {voice.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -284,4 +291,5 @@ export default function BhashaVoicePage() {
       </footer>
     </div>
   );
-}
+
+    
