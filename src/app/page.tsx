@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown } from 'lucide-react';
+import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,17 @@ import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const HINDI_VOICES = [
   { id: 'Algenib', name: 'Shubham' },
@@ -27,48 +38,44 @@ const INITIAL_COINS = 500;
 
 const PLANS = [
     {
-      name: 'Starter',
+      name: 'Monthly',
       icon: Gem,
-      price: '₹59',
-      duration: '1 Month',
-      coins: '5,000 Coins',
-      conversions: '~20',
-      bestFor: 'Beginners / Casual use',
-      featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01/59'
-    },
-    {
-      name: 'Pro',
-      icon: Rocket,
       price: '₹149',
-      duration: '3 Months',
-      coins: '18,000 Coins',
-      conversions: '~72',
-      bestFor: 'Regular Creators',
-      featured: true,
+      coins: '12,500 Coins',
+      conversions: '~50 conversions',
+      features: [],
+      featured: false,
       paymentLink: 'https://razorpay.me/@Payme01/149'
     },
     {
-      name: 'Business',
-      icon: Briefcase,
-      price: '₹299',
-      duration: '6 Months',
-      coins: '40,000 Coins',
-      conversions: '~160',
-      bestFor: 'Small Teams / Marketers',
-      featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01/299'
+      name: 'Quarterly',
+      icon: Rocket,
+      price: '₹399',
+      coins: '45,000 Coins',
+      conversions: '~180 conversions',
+      features: ['+5 bonus conversions/month'],
+      featured: true,
+      paymentLink: 'https://razorpay.me/@Payme01/399'
     },
     {
-      name: 'Ultimate',
-      icon: Crown,
-      price: '₹539',
-      duration: '12 Months',
-      coins: '90,000 Coins',
-      conversions: '~360',
-      bestFor: 'Power Users & Agencies',
+      name: '6-Month',
+      icon: Briefcase,
+      price: '₹749',
+      coins: '1,00,000 Coins',
+      conversions: '~400 conversions',
+      features: ['Priority queue processing'],
       featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01/539'
+      paymentLink: 'https://razorpay.me/@Payme01/749'
+    },
+    {
+      name: 'Yearly',
+      icon: Crown,
+      price: '₹1399',
+      coins: '2,25,000 Coins',
+      conversions: '~900 conversions',
+      features: ['Priority queue', 'Early access to new voices', 'Watermark-free downloads'],
+      featured: false,
+      paymentLink: 'https://razorpay.me/@Payme01/1399'
     },
   ];
 
@@ -82,6 +89,7 @@ export default function BhashaVoicePage() {
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>(HINDI_VOICES[0].id);
   const [speechRate, setSpeechRate] = useState(1);
   const [coins, setCoins] = useState(INITIAL_COINS);
+  const [showNoCoinsAlert, setShowNoCoinsAlert] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
@@ -90,11 +98,7 @@ export default function BhashaVoicePage() {
     if (!text) return;
 
     if (coins < CONVERSION_COST) {
-      toast({
-        variant: "destructive",
-        title: "Not enough coins",
-        description: `You need ${CONVERSION_COST} coins to convert text.`,
-      });
+      setShowNoCoinsAlert(true);
       return;
     }
 
@@ -137,7 +141,7 @@ export default function BhashaVoicePage() {
       }
     } catch (error: any) {
       console.error('Error converting text to speech:', error);
-      if (error.message && (error.message.includes('429') || error.message.includes('ALL_KEYS_EXHAUSTED'))) {
+      if (error.message && error.message.includes('ALL_KEYS_EXHAUSTED')) {
         toast({
           variant: "destructive",
           title: "Quota Exceeded",
@@ -156,6 +160,11 @@ export default function BhashaVoicePage() {
   }, [text, language, selectedVoiceName, toast, speechRate, coins]);
 
   const handlePlayPause = useCallback(async () => {
+    if (coins < CONVERSION_COST && !audioUrl) {
+      setShowNoCoinsAlert(true);
+      return;
+    }
+
     if (isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
@@ -169,12 +178,11 @@ export default function BhashaVoicePage() {
     } else {
       await handleConvert(true);
     }
-  }, [isPlaying, audioUrl, speechRate, handleConvert]);
+  }, [isPlaying, audioUrl, speechRate, handleConvert, coins]);
 
 
   useEffect(() => {
     setIsMounted(true);
-    document.documentElement.classList.add('dark');
     const savedCoins = localStorage.getItem('bhasha-voice-coins');
     if (savedCoins !== null) {
       setCoins(parseInt(savedCoins, 10));
@@ -263,22 +271,29 @@ export default function BhashaVoicePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background dark">
-      <main className="flex-grow w-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-        <Card className="w-full max-w-3xl shadow-2xl bg-card rounded-xl border-border">
+    <div className="flex flex-col min-h-screen bg-background text-foreground dark:bg-gray-900">
+       <header className="w-full p-4 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
+         <div className="flex justify-center items-center gap-2">
+            <Volume2 className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground">BhashaVoice</h1>
+         </div>
+         <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2 bg-amber-100/50 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-full px-3 py-1">
+                 <Coins className="h-5 w-5 text-amber-500" />
+                 <span className="font-bold text-lg text-foreground">{coins}</span>
+             </div>
+             <Button size="sm" onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Zap className="mr-2 h-4 w-4" />
+                Upgrade
+             </Button>
+         </div>
+       </header>
+
+      <main className="w-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+        <Card className="w-full max-w-3xl shadow-lg bg-card rounded-xl border">
           <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-3 mb-2">
-              <Volume2 className="h-10 w-10 text-primary" />
-              <CardTitle className="text-5xl font-headline font-bold text-card-foreground">BhashaVoice</CardTitle>
-            </div>
-            <CardDescription className="text-muted-foreground text-lg">Your Indian accent text-to-speech companion.</CardDescription>
-            <div className="flex justify-center items-center gap-4 pt-2">
-                <Badge variant="secondary">Free Tier</Badge>
-                <div className="flex items-center gap-2">
-                    <Coins className="h-5 w-5 text-yellow-400" />
-                    <span className="font-bold text-lg text-foreground">{coins}</span>
-                </div>
-            </div>
+            <CardTitle className="text-3xl font-headline font-bold text-card-foreground">Create Your Audio</CardTitle>
+            <CardDescription className="text-muted-foreground">Type, select your preferences, and convert to speech in seconds.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 px-4 md:px-8">
             <Textarea
@@ -288,35 +303,35 @@ export default function BhashaVoicePage() {
                 setText(e.target.value);
                 setAudioUrl(null);
               }}
-              className="min-h-[180px] text-base resize-none focus:ring-accent bg-input border-border text-foreground rounded-lg"
+              className="min-h-[180px] text-base resize-none focus:ring-primary bg-input/50 dark:bg-background rounded-lg"
               disabled={isConverting}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="language" className="text-muted-foreground font-semibold">Language</Label>
+                <Label htmlFor="language" className="font-semibold">Language</Label>
                 <Select value={language} onValueChange={setLanguage} disabled={isConverting}>
-                  <SelectTrigger id="language" className="focus:ring-accent bg-input border-border text-foreground rounded-lg">
+                  <SelectTrigger id="language" className="focus:ring-primary bg-input/50 dark:bg-background rounded-lg">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border rounded-lg">
-                    <SelectItem value="en-IN" className="text-popover-foreground">English (India)</SelectItem>
-                    <SelectItem value="hi-IN" className="text-popover-foreground">Hindi (India)</SelectItem>
+                    <SelectItem value="en-IN">English (India)</SelectItem>
+                    <SelectItem value="hi-IN">Hindi (India)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="voice" className="text-muted-foreground font-semibold">Voice</Label>
+                <Label htmlFor="voice" className="font-semibold">Voice</Label>
                 <Select 
                   value={selectedVoiceName} 
                   onValueChange={setSelectedVoiceName}
                   disabled={isConverting}
                 >
-                  <SelectTrigger id="voice" className="focus:ring-accent bg-input border-border text-foreground rounded-lg">
+                  <SelectTrigger id="voice" className="focus:ring-primary bg-input/50 dark:bg-background rounded-lg">
                     <SelectValue placeholder="Select voice" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border rounded-lg">
                     {voicesForLanguage.map((voice) => (
-                      <SelectItem key={voice.id} value={voice.id} className="text-popover-foreground">
+                      <SelectItem key={voice.id} value={voice.id}>
                         {voice.name}
                       </SelectItem>
                     ))}
@@ -326,7 +341,7 @@ export default function BhashaVoicePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="speed" className="text-muted-foreground font-semibold">Speed: <span className="text-primary font-bold">{speechRate.toFixed(1)}x</span></Label>
+              <Label htmlFor="speed" className="font-semibold">Speed: <span className="text-primary font-bold">{speechRate.toFixed(1)}x</span></Label>
               <Slider
                 id="speed"
                 min={0.5}
@@ -340,8 +355,8 @@ export default function BhashaVoicePage() {
             </div>
 
             {audioUrl && !isConverting && (
-              <div className="space-y-2">
-                <Label className="text-muted-foreground font-semibold">Preview</Label>
+              <div className="space-y-2 animate-in fade-in duration-500">
+                <Label className="font-semibold">Preview</Label>
                 <audio 
                   controls 
                   ref={audioRef}
@@ -362,51 +377,59 @@ export default function BhashaVoicePage() {
               onClick={handlePlayPause} 
               size="lg" 
               disabled={!text || isConverting} 
-              className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 transition-all"
+              className="w-full sm:w-auto flex-grow bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all disabled:bg-green-600/50"
+              style={{ backgroundColor: 'hsl(var(--cta))' }}
             >
               {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
-              {isConverting ? 'Loading...' : (isPlaying ? 'Pause' : `Play (-${CONVERSION_COST} Coins)`)}
+              {isConverting ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
             </Button>
-            <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all disabled:from-pink-500/50 disabled:to-purple-600/50">
+            <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
               <Volume2 className="mr-2 h-5 w-5" />
-              Generate Audio
+              Convert (-{CONVERSION_COST} Coins)
             </Button>
-            <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-accent text-accent hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
-              <Download className="mr-2 h-5 w-5" />
-              Download
-            </Button>
-            <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-accent text-accent hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
-              <Share2 className="mr-2 h-5 w-5" />
-              Share
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleDownload} variant="outline" size="icon" disabled={!audioUrl || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg">
+                <Download className="h-5 w-5" />
+              </Button>
+              <Button onClick={handleShare} variant="outline" size="icon" disabled={!text || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg">
+                <Share2 className="h-5 w-5" />
+              </Button>
+            </div>
           </CardFooter>
         </Card>
 
-        <section className="w-full max-w-6xl mt-12 md:mt-20">
+        <section id="plans" className="w-full max-w-6xl mt-16 md:mt-24 scroll-mt-20">
             <div className="text-center mb-10">
-                <h2 className="text-4xl md:text-5xl font-bold text-foreground">Unlock More Power</h2>
+                <h2 className="text-4xl md:text-5xl font-bold text-foreground">Recharge or Upgrade Plan</h2>
                 <p className="text-lg text-muted-foreground mt-2">Choose a plan that fits your creative needs.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {PLANS.map((plan) => (
                     <Card key={plan.name} className={cn(
                         "flex flex-col rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105",
-                        plan.featured ? "border-primary border-2 shadow-primary/30" : "border-border"
+                        plan.featured ? "border-primary border-2 shadow-primary/20" : "border-border"
                     )}>
-                        <CardHeader className="p-6 bg-card/80">
+                        {plan.featured && <Badge className="absolute -top-3 right-4 bg-primary text-primary-foreground">Most Popular</Badge>}
+                        <CardHeader className="p-6 bg-card/50">
                             <div className="flex items-center gap-3">
-                                <plan.icon className={cn("h-8 w-8", plan.featured ? "text-primary" : "text-accent")} />
+                                <plan.icon className={cn("h-8 w-8", plan.featured ? "text-primary" : "text-muted-foreground")} />
                                 <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
                             </div>
-                            {plan.featured && <Badge className="w-fit bg-primary text-primary-foreground">Most Popular</Badge>}
                         </CardHeader>
                         <CardContent className="flex-grow p-6 space-y-4">
-                            <div className="text-4xl font-extrabold text-foreground">{plan.price} <span className="text-base font-medium text-muted-foreground">/ {plan.duration}</span></div>
-                            <ul className="space-y-2 text-foreground/90">
-                                <li className="flex items-center gap-2"><Coins className="h-5 w-5 text-yellow-400" /> <span>{plan.coins}</span></li>
-                                <li className="flex items-center gap-2"><Disc3 className="h-5 w-5 text-teal-400" /> <span>Est. {plan.conversions} conversions</span></li>
+                            <div className="text-4xl font-extrabold text-foreground">{plan.price}</div>
+                            <div className="space-y-1">
+                              <p className="font-semibold text-primary">{plan.coins}</p>
+                              <p className="text-sm text-muted-foreground">{plan.conversions}</p>
+                            </div>
+                            <ul className="space-y-2 text-foreground/90 text-sm">
+                                {plan.features.map(feature => (
+                                    <li key={feature} className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500" style={{ backgroundColor: 'hsl(var(--cta))' }}></div>
+                                        <span>{feature}</span>
+                                    </li>
+                                ))}
                             </ul>
-                            <p className="text-sm text-muted-foreground">{plan.bestFor}</p>
                         </CardContent>
                         <CardFooter className="p-6 mt-auto">
                             <Button
@@ -414,8 +437,9 @@ export default function BhashaVoicePage() {
                                 size="lg"
                                 className={cn(
                                 "w-full font-bold",
-                                plan.featured ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-accent text-accent-foreground hover:bg-accent/90"
+                                plan.featured ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-white hover:bg-green-700"
                                 )}
+                                style={!plan.featured ? { backgroundColor: 'hsl(var(--cta))' } : {}}
                             >
                                 Choose Plan
                             </Button>
@@ -429,8 +453,28 @@ export default function BhashaVoicePage() {
       <footer className="w-full p-4 text-center text-muted-foreground">
         <p className="flex items-center justify-center gap-2">
           <Code className="h-4 w-4"/>
-          Developed by Your Name
+          Developed with 💙 by BhashaVoice
         </p>
       </footer>
+      <AlertDialog open={showNoCoinsAlert} onOpenChange={setShowNoCoinsAlert}>
+        <AlertDialogContent style={{borderColor: 'hsl(var(--destructive))'}}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className='flex items-center gap-2'>
+              <AlertTriangle className="h-6 w-6" style={{color: 'hsl(var(--warning))'}}/>
+              Not Enough Coins
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Aapke coins khatam ho gaye hain. Recharge kijiye ya Plan upgrade kijiye.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>
+              Upgrade Plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+}
