@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A text-to-speech flow using Genkit.
@@ -22,17 +21,20 @@ const ttsFlow = ai.defineFlow(
     outputSchema: SpeakOutputSchema,
   },
   async (input) => {
-    // Fallback to an empty string for the default key if env vars are not set.
+    // Ensure that only valid, non-empty keys are used.
     const keys = [
-        process.env.GEMINI_API_KEY_1 || '', 
-        process.env.GEMINI_API_KEY_2 || ''
-    ];
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_1,
+      process.env.GEMINI_API_KEY_2,
+    ].filter((key): key is string => !!key);
 
+    if (keys.length === 0) {
+      throw new Error("NO_API_KEYS: No Gemini API keys are configured.");
+    }
+    
     for (const key of keys) {
       try {
-        // Dynamically select the model with the specific API key for this attempt.
-        // If the key is an empty string, googleAI() will use the default from process.env.GEMINI_API_KEY
-        const model = googleAI('gemini-2.5-flash-preview-tts', { apiKey: key || undefined });
+        const model = googleAI('gemini-2.5-flash-preview-tts', { apiKey: key });
         
         const { media } = await ai.generate({
           model: model,
@@ -57,23 +59,18 @@ const ttsFlow = ai.defineFlow(
         );
         const wavData = await toWav(audioBuffer);
         
-        // If successful, return the audio and exit the loop.
         return {
           audio: 'data:audio/wav;base64,' + wavData,
         };
       } catch (error: any) {
-        // Check for quota-related errors to decide whether to try the next key.
         if (error.message && (error.message.includes('429') || error.message.includes('QuotaFailure') || error.message.includes('resource has been exhausted'))) {
-          console.log(`API key failed with quota error. Trying next key.`);
-          // Continue to the next iteration of the loop to try the next key.
+          console.log(`API key ending in ...${key.slice(-4)} failed with a quota error. Trying next key.`);
           continue;
         }
-        // For any other error, throw it immediately.
         throw error;
       }
     }
     
-    // If the loop completes without a successful return, all keys have failed.
     throw new Error('ALL_KEYS_EXHAUSTED: All API keys have failed with quota errors.');
   }
 );
