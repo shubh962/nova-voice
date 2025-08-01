@@ -2,14 +2,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Volume2, AlertTriangle, Disc3, Code } from 'lucide-react';
+import { Play, Pause, Download, Share2, Volume2, Disc3, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
 
@@ -30,6 +29,8 @@ export default function BhashaVoicePage() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Set dark theme by default
+    document.documentElement.classList.add('dark');
   }, []);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function BhashaVoicePage() {
     } else {
       await handleConvert(true);
     }
-  }, [isPlaying, audioUrl]);
+  }, [isPlaying, audioUrl, text, selectedVoiceName, language]);
 
   const handleConvert = useCallback(async (playAfter = false) => {
     if (!text) return;
@@ -120,7 +121,7 @@ export default function BhashaVoicePage() {
 
   const handleShare = useCallback(async () => {
     if (!text) return;
-
+  
     const fallbackShare = () => {
       navigator.clipboard.writeText(text);
       toast({
@@ -128,7 +129,7 @@ export default function BhashaVoicePage() {
         description: "Sharing is not available, so we copied the text for you.",
       });
     };
-
+  
     if (navigator.share) {
       try {
         await navigator.share({
@@ -137,11 +138,9 @@ export default function BhashaVoicePage() {
         });
       } catch (error) {
         console.error('Error sharing:', error);
-        // Fallback to clipboard if sharing fails (e.g., permission denied)
         fallbackShare();
       }
     } else {
-      // Fallback to clipboard if navigator.share is not supported
       fallbackShare();
     }
   }, [text, toast]);
@@ -151,9 +150,9 @@ export default function BhashaVoicePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background dark">
       <main className="flex-grow w-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-        <Card className="w-full max-w-3xl shadow-2xl bg-card rounded-xl">
+        <Card className="w-full max-w-3xl shadow-2xl bg-card rounded-xl border-border">
           <CardHeader className="text-center">
             <div className="flex justify-center items-center gap-3 mb-2">
               <Volume2 className="h-10 w-10 text-primary" />
@@ -227,20 +226,20 @@ export default function BhashaVoicePage() {
               onClick={handlePlayPause} 
               size="lg" 
               disabled={!text || isConverting} 
-              className="w-full sm:w-auto flex-grow sm:flex-grow-0 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg"
+              className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all"
             >
               {isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
               {isPlaying ? 'Pause' : 'Play'}
             </Button>
-            <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold rounded-lg">
+            <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 transition-all">
               {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
               {isConverting ? 'Converting...' : 'Convert'}
             </Button>
-            <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-border hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
+            <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-accent text-accent hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
               <Download className="mr-2 h-5 w-5" />
               Download
             </Button>
-            <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-border hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
+            <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-accent text-accent hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
               <Share2 className="mr-2 h-5 w-5" />
               Share
             </Button>
