@@ -7,23 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
 
-const HINDI_VOICES = ['Algenib', 'Achernar'];
-const ENGLISH_VOICES = ['Shaula', 'Gemma'];
+const HINDI_VOICES = ['Algenib', 'Achernar', 'en-IN-Wavenet-A', 'en-IN-Wavenet-D'];
+const ENGLISH_VOICES = ['Shaula', 'Gemma', 'en-IN-Wavenet-B', 'en-IN-Wavenet-C'];
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
   const [language, setLanguage] = useState('hi-IN');
-  const [pitch, setPitch] = useState(1);
-  const [rate, setRate] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isSupported, setIsSupported] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -47,7 +43,7 @@ export default function BhashaVoicePage() {
 
   useEffect(() => {
     setAudioUrl(null);
-  }, [text, selectedVoiceName, pitch, rate]);
+  }, [text, selectedVoiceName]);
 
   const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
@@ -57,8 +53,10 @@ export default function BhashaVoicePage() {
     }
 
     if (audioUrl) {
-      audioRef.current?.play();
-      setIsPlaying(true);
+      if (audioRef.current) {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
     } else {
       await handleConvert(true);
     }
@@ -207,32 +205,6 @@ export default function BhashaVoicePage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rate" className="text-muted-foreground">Speed: {rate.toFixed(1)}x</Label>
-              <Slider
-                id="rate"
-                min={0.5}
-                max={2}
-                step={0.1}
-                value={[rate]}
-                onValueChange={(value) => setRate(value[0])}
-                disabled={isConverting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pitch" className="text-muted-foreground">Pitch: {pitch.toFixed(1)}</Label>
-              <Slider
-                id="pitch"
-                min={0.5}
-                max={2}
-                step={0.1}
-                value={[pitch]}
-                onValueChange={(value) => setPitch(value[0])}
-                disabled={isConverting}
-              />
             </div>
           </div>
            {audioUrl && (
