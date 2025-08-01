@@ -120,6 +120,15 @@ export default function BhashaVoicePage() {
 
   const handleShare = useCallback(async () => {
     if (!text) return;
+
+    const fallbackShare = () => {
+      navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied to Clipboard",
+        description: "Sharing is not available, so we copied the text for you.",
+      });
+    };
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -128,13 +137,12 @@ export default function BhashaVoicePage() {
         });
       } catch (error) {
         console.error('Error sharing:', error);
+        // Fallback to clipboard if sharing fails (e.g., permission denied)
+        fallbackShare();
       }
     } else {
-      navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied to Clipboard",
-        description: "Text copied to clipboard as sharing is not available.",
-      });
+      // Fallback to clipboard if navigator.share is not supported
+      fallbackShare();
     }
   }, [text, toast]);
   
