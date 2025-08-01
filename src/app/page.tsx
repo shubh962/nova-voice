@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from "@/components/ui/slider"
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast"
 import { speak } from '@/ai/flows/tts-flow';
@@ -23,6 +24,7 @@ export default function BhashaVoicePage() {
   const [isConverting, setIsConverting] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>(HINDI_VOICES[0]);
+  const [speechRate, setSpeechRate] = useState(1);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
@@ -46,6 +48,18 @@ export default function BhashaVoicePage() {
     setAudioUrl(null);
   }, [text, selectedVoiceName]);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speechRate;
+    }
+  }, [speechRate]);
+
+  const applyPlaybackRate = () => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speechRate;
+    }
+  };
+
   const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
       audioRef.current?.pause();
@@ -53,15 +67,14 @@ export default function BhashaVoicePage() {
       return;
     }
 
-    if (audioUrl) {
-      if (audioRef.current) {
+    if (audioUrl && audioRef.current) {
+        applyPlaybackRate();
         audioRef.current.play();
         setIsPlaying(true);
-      }
     } else {
       await handleConvert(true);
     }
-  }, [isPlaying, audioUrl, text, selectedVoiceName, language]);
+  }, [isPlaying, audioUrl, speechRate]);
 
   const handleConvert = useCallback(async (playAfter = false) => {
     if (!text) return;
@@ -85,6 +98,7 @@ export default function BhashaVoicePage() {
           setTimeout(() => {
             if (audioRef.current) {
               audioRef.current.src = response.audio;
+              applyPlaybackRate();
               audioRef.current?.play();
               setIsPlaying(true);
             }
@@ -103,7 +117,7 @@ export default function BhashaVoicePage() {
     } finally {
       setIsConverting(false);
     }
-  }, [text, language, selectedVoiceName, toast]);
+  }, [text, language, selectedVoiceName, toast, speechRate]);
 
   const handleDownload = useCallback(() => {
     if (!audioUrl) return;
@@ -204,6 +218,21 @@ export default function BhashaVoicePage() {
                 </Select>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="speed" className="text-muted-foreground font-semibold">Speed: <span className="text-primary font-bold">{speechRate.toFixed(1)}x</span></Label>
+              <Slider
+                id="speed"
+                min={0.5}
+                max={2}
+                step={0.1}
+                value={[speechRate]}
+                onValueChange={(value) => setSpeechRate(value[0])}
+                disabled={isConverting}
+                className="[&>span:first-child]:bg-primary"
+              />
+            </div>
+
             {audioUrl && (
               <div className="space-y-2">
                 <Label className="text-muted-foreground font-semibold">Preview</Label>
@@ -212,6 +241,7 @@ export default function BhashaVoicePage() {
                   ref={audioRef}
                   src={audioUrl} 
                   className="w-full rounded-lg"
+                  onCanPlay={applyPlaybackRate}
                   onEnded={() => setIsPlaying(false)}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
