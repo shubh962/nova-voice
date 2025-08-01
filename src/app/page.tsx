@@ -99,7 +99,10 @@ export default function BhashaVoicePage() {
     }
 
     setIsConverting(true);
-    setAudioUrl(null);
+    if (!playAfter) {
+      setAudioUrl(null);
+    }
+    
     try {
       const response: SpeakOutput = await speak({
         text,
@@ -116,7 +119,7 @@ export default function BhashaVoicePage() {
         if (!playAfter) {
             toast({
               title: "Conversion Successful",
-              description: `Deducted ${CONVERSION_COST} coins.`,
+              description: `Deducted ${CONVERSION_COST} coins. Ready to play.`,
             });
         }
         if (playAfter) {
@@ -336,7 +339,7 @@ export default function BhashaVoicePage() {
               />
             </div>
 
-            {audioUrl && (
+            {audioUrl && !isConverting && (
               <div className="space-y-2">
                 <Label className="text-muted-foreground font-semibold">Preview</Label>
                 <audio 
@@ -355,18 +358,18 @@ export default function BhashaVoicePage() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 md:gap-4 p-4 md:p-8">
-            <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all disabled:from-pink-500/50 disabled:to-purple-600/50">
-              {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
-              {isConverting ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
-            </Button>
             <Button 
               onClick={handlePlayPause} 
               size="lg" 
               disabled={!text || isConverting} 
               className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 transition-all"
             >
-              {isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
-              {isPlaying ? 'Pause' : 'Play'}
+              {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
+              {isConverting ? 'Loading...' : (isPlaying ? 'Pause' : `Play (-${CONVERSION_COST} Coins)`)}
+            </Button>
+            <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow sm:flex-grow-0 text-white font-bold rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all disabled:from-pink-500/50 disabled:to-purple-600/50">
+              <Volume2 className="mr-2 h-5 w-5" />
+              Generate Audio
             </Button>
             <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting} className="w-full sm:w-auto flex-grow sm:flex-grow-0 border-accent text-accent hover:bg-accent hover:text-accent-foreground font-bold rounded-lg">
               <Download className="mr-2 h-5 w-5" />
@@ -431,4 +434,5 @@ export default function BhashaVoicePage() {
       </footer>
     </div>
   );
-}
+
+    
