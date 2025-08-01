@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap } from 'lucide-react';
+import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -45,6 +45,7 @@ const PLANS = [
       conversions: '~50 conversions',
       features: [],
       featured: false,
+      badge: null,
       paymentLink: 'https://razorpay.me/@Payme01/149'
     },
     {
@@ -55,6 +56,7 @@ const PLANS = [
       conversions: '~180 conversions',
       features: ['+5 bonus conversions/month'],
       featured: true,
+      badge: 'Most Popular',
       paymentLink: 'https://razorpay.me/@Payme01/399'
     },
     {
@@ -65,6 +67,7 @@ const PLANS = [
       conversions: '~400 conversions',
       features: ['Priority queue processing'],
       featured: false,
+      badge: null,
       paymentLink: 'https://razorpay.me/@Payme01/749'
     },
     {
@@ -75,6 +78,7 @@ const PLANS = [
       conversions: '~900 conversions',
       features: ['Priority queue', 'Early access to new voices', 'Watermark-free downloads'],
       featured: false,
+      badge: 'Best Value',
       paymentLink: 'https://razorpay.me/@Payme01/1399'
     },
   ];
@@ -271,7 +275,7 @@ export default function BhashaVoicePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground dark:bg-gray-900">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
        <header className="w-full p-4 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
          <div className="flex justify-center items-center gap-2">
             <Volume2 className="h-8 w-8 text-primary" />
@@ -280,7 +284,7 @@ export default function BhashaVoicePage() {
          <div className="flex items-center gap-4">
              <div className="flex items-center gap-2 bg-amber-100/50 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-full px-3 py-1">
                  <Coins className="h-5 w-5 text-amber-500" />
-                 <span className="font-bold text-lg text-foreground">{coins}</span>
+                 <span className="font-bold text-lg text-foreground">{coins.toLocaleString()}</span>
              </div>
              <Button size="sm" onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>
                 <Zap className="mr-2 h-4 w-4" />
@@ -380,12 +384,12 @@ export default function BhashaVoicePage() {
               className="w-full sm:w-auto flex-grow bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all disabled:bg-green-600/50"
               style={{ backgroundColor: 'hsl(var(--cta))' }}
             >
-              {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
-              {isConverting ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
+              {isConverting && audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
+              {isConverting && audioUrl ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
             </Button>
             <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
-              <Volume2 className="mr-2 h-5 w-5" />
-              Convert (-{CONVERSION_COST} Coins)
+              {isConverting && !audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
+              {isConverting && !audioUrl ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
             </Button>
             <div className="flex gap-2">
               <Button onClick={handleDownload} variant="outline" size="icon" disabled={!audioUrl || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg">
@@ -409,7 +413,7 @@ export default function BhashaVoicePage() {
                         "flex flex-col rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105",
                         plan.featured ? "border-primary border-2 shadow-primary/20" : "border-border"
                     )}>
-                        {plan.featured && <Badge className="absolute -top-3 right-4 bg-primary text-primary-foreground">Most Popular</Badge>}
+                        {plan.badge && <Badge className={cn("absolute -top-3 right-4 text-primary-foreground", plan.featured ? "bg-primary" : "bg-accent")}>{plan.badge}</Badge>}
                         <CardHeader className="p-6 bg-card/50">
                             <div className="flex items-center gap-3">
                                 <plan.icon className={cn("h-8 w-8", plan.featured ? "text-primary" : "text-muted-foreground")} />
