@@ -34,37 +34,6 @@ export default function BhashaVoicePage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setIsMounted(true);
-    // Set dark theme by default
-    document.documentElement.classList.add('dark');
-  }, []);
-
-  useEffect(() => {
-    setAudioUrl(null);
-    if (language === 'hi-IN') {
-      setSelectedVoiceName(HINDI_VOICES[0].id);
-    } else {
-      setSelectedVoiceName(ENGLISH_VOICES[0]);
-    }
-  }, [language]);
-
-  useEffect(() => {
-    setAudioUrl(null);
-  }, [text, selectedVoiceName]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = speechRate;
-    }
-  }, [speechRate]);
-
-  const applyPlaybackRate = () => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = speechRate;
-    }
-  };
-
   const handleConvert = useCallback(async (playAfter = false) => {
     if (!text) return;
     setIsConverting(true);
@@ -98,7 +67,7 @@ export default function BhashaVoicePage() {
       }
     } catch (error: any) {
       console.error('Error converting text to speech:', error);
-      if (error.message && error.message.includes('429 Too Many Requests')) {
+      if (error.message && (error.message.includes('429 Too Many Requests') || error.message.includes('ALL_KEYS_EXHAUSTED'))) {
         toast({
           variant: "destructive",
           title: "Quota Exceeded",
@@ -116,7 +85,6 @@ export default function BhashaVoicePage() {
     }
   }, [text, language, selectedVoiceName, toast, speechRate]);
 
-
   const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
       audioRef.current?.pause();
@@ -132,6 +100,39 @@ export default function BhashaVoicePage() {
       await handleConvert(true);
     }
   }, [isPlaying, audioUrl, speechRate, handleConvert]);
+
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Set dark theme by default
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  useEffect(() => {
+    setAudioUrl(null);
+    if (language === 'hi-IN') {
+      setSelectedVoiceName(HINDI_VOICES[0].id);
+    } else {
+      setSelectedVoiceName(ENGLISH_VOICES[0]);
+    }
+  }, [language]);
+
+  useEffect(() => {
+    setAudioUrl(null);
+  }, [text, selectedVoiceName]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speechRate;
+    }
+  }, [speechRate]);
+
+  const applyPlaybackRate = () => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speechRate;
+    }
+  };
+
 
   const handleDownload = useCallback(() => {
     if (!audioUrl) return;
@@ -300,5 +301,3 @@ export default function BhashaVoicePage() {
       </footer>
     </div>
   );
-
-    
