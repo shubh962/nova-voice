@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Volume2, AlertTriangle } from 'lucide-react';
+import { Play, Pause, Download, Share2, Volume2, AlertTriangle, Disc3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { speak } from '@/ai/flows/tts-flow';
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
@@ -22,6 +24,8 @@ export default function BhashaVoicePage() {
   const [isPaused, setIsPaused] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const { toast } = useToast();
@@ -50,8 +54,12 @@ export default function BhashaVoicePage() {
   useEffect(() => {
     const filteredVoices = voices.filter(voice => voice.lang === language);
     setSelectedVoice(filteredVoices[0] || null);
+    setAudioUrl(null);
   }, [language, voices]);
 
+  useEffect(() => {
+    setAudioUrl(null);
+  }, [text, selectedVoice, pitch, rate]);
 
   const handlePlayPause = useCallback(() => {
     if (!text || !selectedVoice) return;
@@ -94,22 +102,50 @@ export default function BhashaVoicePage() {
     }
   }, [text, selectedVoice, pitch, rate, isPlaying, isPaused, toast]);
 
-  const handleSave = useCallback(() => {
-    if (!text) return;
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+  const handleConvert = useCallback(async () => {
+    if (!text || !selectedVoice) return;
+    setIsConverting(true);
+    setAudioUrl(null);
+    try {
+      const response = await speak({
+        text,
+        voice: selectedVoice.name,
+        lang: selectedVoice.lang
+      });
+      if (response.audio) {
+        setAudioUrl(response.audio);
+        toast({
+          title: "Conversion Successful",
+          description: "Your text has been converted to audio.",
+        });
+      } else {
+        throw new Error("Audio data not received.");
+      }
+    } catch (error) {
+      console.error('Error converting text to speech:', error);
+      toast({
+        variant: "destructive",
+        title: "Conversion Failed",
+        description: "Could not convert text to speech.",
+      });
+    } finally {
+      setIsConverting(false);
+    }
+  }, [text, selectedVoice, toast]);
+
+  const handleDownload = useCallback(() => {
+    if (!audioUrl) return;
     const link = document.createElement('a');
-    link.href = url;
-    link.download = 'BhashaVoice-speech.txt';
+    link.href = audioUrl;
+    link.download = 'BhashaVoice-speech.wav';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
     toast({
-      title: "Text Saved",
-      description: "Your text has been saved as a .txt file.",
+      title: "Audio Downloading",
+      description: "Your audio file is being downloaded.",
     });
-  }, [text, toast]);
+  }, [audioUrl, toast]);
 
   const handleShare = useCallback(async () => {
     if (!text) return;
@@ -159,14 +195,17 @@ export default function BhashaVoicePage() {
           <Textarea
             placeholder="Type or paste your text here..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setAudioUrl(null);
+            }}
             className="min-h-[150px] text-base resize-none focus:ring-accent"
-            disabled={!isSupported || isPlaying}
+            disabled={!isSupported || isPlaying || isConverting}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
-              <Select value={language} onValueChange={setLanguage} disabled={!isSupported || isPlaying}>
+              <Select value={language} onValueChange={setLanguage} disabled={!isSupported || isPlaying || isConverting}>
                 <SelectTrigger id="language" className="focus:ring-accent">
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
@@ -181,7 +220,7 @@ export default function BhashaVoicePage() {
               <Select 
                 value={selectedVoice?.name || ''} 
                 onValueChange={(name) => setSelectedVoice(voices.find(v => v.name === name) || null)}
-                disabled={!isSupported || isPlaying || filteredVoices.length === 0}
+                disabled={!isSupported || isPlaying || filteredVoices.length === 0 || isConverting}
               >
                 <SelectTrigger id="voice" className="focus:ring-accent">
                   <SelectValue placeholder="Select voice" />
@@ -210,7 +249,7 @@ export default function BhashaVoicePage() {
                 step={0.1}
                 value={[rate]}
                 onValueChange={(value) => setRate(value[0])}
-                disabled={!isSupported || isPlaying}
+                disabled={!isSupported || isPlaying || isConverting}
               />
             </div>
             <div className="space-y-2">
@@ -222,26 +261,38 @@ export default function BhashaVoicePage() {
                 step={0.1}
                 value={[pitch]}
                 onValueChange={(value) => setPitch(value[0])}
-                disabled={!isSupported || isPlaying}
+                disabled={!isSupported || isPlaying || isConverting}
               />
             </div>
           </div>
+           {audioUrl && (
+            <div className="space-y-2">
+              <Label>Preview</Label>
+              <audio controls src={audioUrl} className="w-full">
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
         </CardContent>
-        <CardFooter className="flex justify-center gap-4">
+        <CardFooter className="flex flex-wrap justify-center gap-4">
           <Button 
             onClick={handlePlayPause} 
             size="lg" 
-            disabled={!text || !selectedVoice || !isSupported} 
-            className="w-36 bg-primary hover:bg-primary/90 text-primary-foreground"
+            disabled={!text || !selectedVoice || !isSupported || isConverting} 
+            className="w-32 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isPlaying && !isPaused ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
             {isPlaying ? (isPaused ? 'Resume' : 'Pause') : 'Play'}
           </Button>
-          <Button onClick={handleSave} variant="outline" size="lg" disabled={!text || !isSupported || isPlaying}>
-            <Download className="mr-2 h-5 w-5" />
-            Save
+           <Button onClick={handleConvert} size="lg" disabled={!text || !selectedVoice || !isSupported || isPlaying || isConverting}>
+            {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
+            {isConverting ? 'Converting...' : 'Convert'}
           </Button>
-          <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || !isSupported || isPlaying}>
+          <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting || isPlaying}>
+            <Download className="mr-2 h-5 w-5" />
+            Download
+          </Button>
+          <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || !isSupported || isPlaying || isConverting}>
             <Share2 className="mr-2 h-5 w-5" />
             Share
           </Button>
