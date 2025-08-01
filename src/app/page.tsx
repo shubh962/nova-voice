@@ -276,7 +276,7 @@ export default function BhashaVoicePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
+    <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
        <header className="w-full p-4 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
          <div className="flex justify-center items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
