@@ -22,20 +22,17 @@ const ttsFlow = ai.defineFlow(
     outputSchema: SpeakOutputSchema,
   },
   async (input) => {
-    const keys = [process.env.GEMINI_API_KEY_1, process.env.GEMINI_API_KEY_2].filter((k): k is string => !!k && k.trim() !== '');
+    // Fallback to an empty string for the default key if env vars are not set.
+    const keys = [
+        process.env.GEMINI_API_KEY_1 || '', 
+        process.env.GEMINI_API_KEY_2 || ''
+    ];
 
-    if (keys.length === 0) {
-      // Let googleAI plugin handle the case where no key is provided (e.g. from default env var)
-      // by not providing an API key at all.
-      keys.push(''); 
-    }
-    
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
+    for (const key of keys) {
       try {
-        const model = key 
-            ? googleAI('gemini-2.5-flash-preview-tts', { apiKey: key })
-            : 'googleai/gemini-2.5-flash-preview-tts';
+        // Dynamically select the model with the specific API key for this attempt.
+        // If the key is an empty string, googleAI() will use the default from process.env.GEMINI_API_KEY
+        const model = googleAI('gemini-2.5-flash-preview-tts', { apiKey: key || undefined });
         
         const { media } = await ai.generate({
           model: model,
@@ -60,26 +57,23 @@ const ttsFlow = ai.defineFlow(
         );
         const wavData = await toWav(audioBuffer);
         
+        // If successful, return the audio and exit the loop.
         return {
           audio: 'data:audio/wav;base64,' + wavData,
         };
       } catch (error: any) {
-        if (error.message && (error.message.includes('429 Too Many Requests') || error.message.includes('QuotaFailure'))) {
-          console.log(`API key ending with ...${key ? key.slice(-4) : 'DEFAULT'} failed with quota error. Trying next key.`);
-          if (i === keys.length - 1) {
-            // This was the last key, re-throw the error
-            throw new Error('ALL_KEYS_EXHAUSTED');
-          }
-          // This key is exhausted, try the next one
+        // Check for quota-related errors to decide whether to try the next key.
+        if (error.message && (error.message.includes('429') || error.message.includes('QuotaFailure') || error.message.includes('resource has been exhausted'))) {
+          console.log(`API key failed with quota error. Trying next key.`);
+          // Continue to the next iteration of the loop to try the next key.
           continue;
         }
-        // For other errors, re-throw them
+        // For any other error, throw it immediately.
         throw error;
       }
     }
     
-    // This should not be reached if there's at least one key (even empty for default)
-    // but as a fallback.
-    throw new Error('No API keys were available to process the request.');
+    // If the loop completes without a successful return, all keys have failed.
+    throw new Error('ALL_KEYS_EXHAUSTED: All API keys have failed with quota errors.');
   }
 );
