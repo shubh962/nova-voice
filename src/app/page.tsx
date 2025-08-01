@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap, Star } from 'lucide-react';
+import { Play, Pause, Download, Share2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap, Star, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -26,6 +27,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Logo } from '@/components/logo';
+import { useAuth } from '@/context/auth-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const HINDI_VOICES = [
   { id: 'Algenib', name: 'Shubham' },
@@ -98,6 +102,7 @@ export default function BhashaVoicePage() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+  const { user, logout } = useAuth();
 
   const handleConvert = useCallback(async (playAfter = false) => {
     if (!text) return;
@@ -188,13 +193,14 @@ export default function BhashaVoicePage() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Note: In a real app, you'd fetch/store coins against the user.id in a database.
     const savedCoins = localStorage.getItem('bhasha-voice-coins');
     if (savedCoins !== null) {
       setCoins(parseInt(savedCoins, 10));
     } else {
       localStorage.setItem('bhasha-voice-coins', INITIAL_COINS.toString());
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     setAudioUrl(null);
@@ -273,7 +279,7 @@ export default function BhashaVoicePage() {
     window.open(paymentLink, '_blank');
   };
 
-  if (!isMounted) return null;
+  if (!isMounted || !user) return null;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
@@ -291,6 +297,31 @@ export default function BhashaVoicePage() {
                 <Zap className="mr-2 h-4 w-4" />
                 Upgrade
              </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                    <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
          </div>
        </header>
 
@@ -483,5 +514,3 @@ export default function BhashaVoicePage() {
     </div>
   );
 }
-
-    
