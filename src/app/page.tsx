@@ -29,7 +29,7 @@ const PLANS = [
     {
       name: 'Starter',
       icon: Gem,
-      price: '₹99',
+      price: '₹59',
       duration: '1 Month',
       coins: '5,000 Coins',
       conversions: '~20',
@@ -40,7 +40,7 @@ const PLANS = [
     {
       name: 'Pro',
       icon: Rocket,
-      price: '₹249',
+      price: '₹149',
       duration: '3 Months',
       coins: '18,000 Coins',
       conversions: '~72',
@@ -51,7 +51,7 @@ const PLANS = [
     {
       name: 'Business',
       icon: Briefcase,
-      price: '₹499',
+      price: '₹299',
       duration: '6 Months',
       coins: '40,000 Coins',
       conversions: '~160',
@@ -62,7 +62,7 @@ const PLANS = [
     {
       name: 'Ultimate',
       icon: Crown,
-      price: '₹899',
+      price: '₹539',
       duration: '12 Months',
       coins: '90,000 Coins',
       conversions: '~360',
