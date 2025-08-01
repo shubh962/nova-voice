@@ -35,7 +35,7 @@ const PLANS = [
       conversions: '~20',
       bestFor: 'Beginners / Casual use',
       featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://razorpay.me/@Payme01/59'
     },
     {
       name: 'Pro',
@@ -46,7 +46,7 @@ const PLANS = [
       conversions: '~72',
       bestFor: 'Regular Creators',
       featured: true,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://razorpay.me/@Payme01/149'
     },
     {
       name: 'Business',
@@ -57,7 +57,7 @@ const PLANS = [
       conversions: '~160',
       bestFor: 'Small Teams / Marketers',
       featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://razorpay.me/@Payme01/299'
     },
     {
       name: 'Ultimate',
@@ -68,7 +68,7 @@ const PLANS = [
       conversions: '~360',
       bestFor: 'Power Users & Agencies',
       featured: false,
-      paymentLink: 'https://razorpay.me/@Payme01'
+      paymentLink: 'https://razorpay.me/@Payme01/539'
     },
   ];
 
@@ -137,7 +137,7 @@ export default function BhashaVoicePage() {
       }
     } catch (error: any) {
       console.error('Error converting text to speech:', error);
-      if (error.message && (error.message.includes('429 Too Many Requests') || error.message.includes('ALL_KEYS_EXHAUSTED'))) {
+      if (error.message && (error.message.includes('429') || error.message.includes('ALL_KEYS_EXHAUSTED'))) {
         toast({
           variant: "destructive",
           title: "Quota Exceeded",
@@ -434,5 +434,3 @@ export default function BhashaVoicePage() {
       </footer>
     </div>
   );
-
-    
