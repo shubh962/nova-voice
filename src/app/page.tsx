@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap, Star } from 'lucide-react';
+import { Play, Pause, Download, Share2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { Logo } from '@/components/logo';
 
 const HINDI_VOICES = [
   { id: 'Algenib', name: 'Shubham' },
@@ -278,7 +279,7 @@ export default function BhashaVoicePage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
        <header className="w-full p-4 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
          <div className="flex justify-center items-center gap-2">
-            <Volume2 className="h-8 w-8 text-primary" />
+            <Logo className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold text-foreground">BhashaVoice</h1>
          </div>
          <div className="flex items-center gap-4">
@@ -388,7 +389,7 @@ export default function BhashaVoicePage() {
               {isConverting && audioUrl ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
             </Button>
             <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
-              {isConverting && !audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
+              {isConverting && !audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
               {isConverting && !audioUrl ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
             </Button>
             <div className="flex gap-2">
@@ -482,3 +483,5 @@ export default function BhashaVoicePage() {
     </div>
   );
 }
+
+    
