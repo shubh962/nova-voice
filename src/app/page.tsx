@@ -35,6 +35,7 @@ const PLANS = [
       conversions: '~20',
       bestFor: 'Beginners / Casual use',
       featured: false,
+      paymentLink: 'https://rzp.io/l/placeholder1'
     },
     {
       name: 'Pro',
@@ -45,6 +46,7 @@ const PLANS = [
       conversions: '~72',
       bestFor: 'Regular Creators',
       featured: true,
+      paymentLink: 'https://rzp.io/l/placeholder2'
     },
     {
       name: 'Business',
@@ -55,6 +57,7 @@ const PLANS = [
       conversions: '~160',
       bestFor: 'Small Teams / Marketers',
       featured: false,
+      paymentLink: 'https://rzp.io/l/placeholder3'
     },
     {
       name: 'Ultimate',
@@ -65,6 +68,7 @@ const PLANS = [
       conversions: '~360',
       bestFor: 'Power Users & Agencies',
       featured: false,
+      paymentLink: 'https://rzp.io/l/placeholder4'
     },
   ];
 
@@ -249,11 +253,8 @@ export default function BhashaVoicePage() {
 
   const hasEnoughCoins = coins >= CONVERSION_COST;
 
-  const handleChoosePlan = () => {
-    toast({
-      title: 'Coming Soon!',
-      description: 'Payment integration is not yet implemented.',
-    });
+  const handleChoosePlan = (paymentLink: string) => {
+    window.open(paymentLink, '_blank');
   };
 
   if (!isMounted) return null;
@@ -406,7 +407,7 @@ export default function BhashaVoicePage() {
                         </CardContent>
                         <CardFooter className="p-6 mt-auto">
                             <Button
-                                onClick={handleChoosePlan}
+                                onClick={() => handleChoosePlan(plan.paymentLink)}
                                 size="lg"
                                 className={cn(
                                 "w-full font-bold",
