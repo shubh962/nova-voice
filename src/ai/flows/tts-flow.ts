@@ -7,8 +7,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import wav from 'wav';
 import { SpeakInput, SpeakOutput, SpeakInputSchema, SpeakOutputSchema } from './tts-schema';
+import { toWav } from '@/lib/audio';
 
 export async function speak(input: SpeakInput): Promise<SpeakOutput> {
   return ttsFlow(input);
@@ -47,30 +47,3 @@ const ttsFlow = ai.defineFlow(
     };
   }
 );
-
-async function toWav(
-  pcmData: Buffer,
-  channels = 1,
-  rate = 24000,
-  sampleWidth = 2
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const writer = new wav.Writer({
-      channels,
-      sampleRate: rate,
-      bitDepth: sampleWidth * 8,
-    });
-
-    const bufs: any[] = [];
-    writer.on('error', reject);
-    writer.on('data', function (d) {
-      bufs.push(d);
-    });
-    writer.on('end', function () {
-      resolve(Buffer.concat(bufs).toString('base64'));
-    });
-
-    writer.write(pcmData);
-    writer.end();
-  });
-}

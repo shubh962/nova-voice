@@ -34,9 +34,6 @@ export default function BhashaVoicePage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (typeof window !== 'undefined' && !('speechSynthesis' in window)) {
-        setIsSupported(false);
-    }
   }, []);
 
   useEffect(() => {
@@ -149,17 +146,17 @@ export default function BhashaVoicePage() {
   if (!isMounted) return null;
 
   return (
-    <main className="min-h-screen w-full flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-2xl shadow-2xl">
+    <main className="min-h-screen w-full flex flex-col items-center justify-center bg-background text-foreground p-4">
+      <Card className="w-full max-w-2xl shadow-2xl bg-card">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center gap-2 mb-2">
             <Volume2 className="h-8 w-8 text-primary" />
-            <CardTitle className="text-4xl font-headline">BhashaVoice</CardTitle>
+            <CardTitle className="text-4xl font-headline text-card-foreground">BhashaVoice</CardTitle>
           </div>
-          <CardDescription>Your Indian accent text-to-speech companion.</CardDescription>
+          <CardDescription className="text-muted-foreground">Your Indian accent text-to-speech companion.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {!isSupported && (
+          {!isMounted && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Feature Not Fully Supported</AlertTitle>
@@ -176,35 +173,35 @@ export default function BhashaVoicePage() {
               setText(e.target.value);
               setAudioUrl(null);
             }}
-            className="min-h-[150px] text-base resize-none focus:ring-accent"
+            className="min-h-[150px] text-base resize-none focus:ring-accent bg-input border-border text-foreground"
             disabled={isConverting}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
+              <Label htmlFor="language" className="text-muted-foreground">Language</Label>
               <Select value={language} onValueChange={setLanguage} disabled={isConverting}>
-                <SelectTrigger id="language" className="focus:ring-accent">
+                <SelectTrigger id="language" className="focus:ring-accent bg-input border-border text-foreground">
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en-IN">English (India)</SelectItem>
-                  <SelectItem value="hi-IN">Hindi (India)</SelectItem>
+                <SelectContent className="bg-popover border-border">
+                  <SelectItem value="en-IN" className="text-popover-foreground">English (India)</SelectItem>
+                  <SelectItem value="hi-IN" className="text-popover-foreground">Hindi (India)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="voice">Voice</Label>
+              <Label htmlFor="voice" className="text-muted-foreground">Voice</Label>
               <Select 
                 value={selectedVoiceName} 
                 onValueChange={setSelectedVoiceName}
                 disabled={isConverting}
               >
-                <SelectTrigger id="voice" className="focus:ring-accent">
+                <SelectTrigger id="voice" className="focus:ring-accent bg-input border-border text-foreground">
                   <SelectValue placeholder="Select voice" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border-border">
                   {voicesForLanguage.map((voice) => (
-                    <SelectItem key={voice} value={voice}>
+                    <SelectItem key={voice} value={voice} className="text-popover-foreground">
                       {voice}
                     </SelectItem>
                   ))}
@@ -214,7 +211,7 @@ export default function BhashaVoicePage() {
           </div>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="rate">Speed: {rate.toFixed(1)}x</Label>
+              <Label htmlFor="rate" className="text-muted-foreground">Speed: {rate.toFixed(1)}x</Label>
               <Slider
                 id="rate"
                 min={0.5}
@@ -226,7 +223,7 @@ export default function BhashaVoicePage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pitch">Pitch: {pitch.toFixed(1)}</Label>
+              <Label htmlFor="pitch" className="text-muted-foreground">Pitch: {pitch.toFixed(1)}</Label>
               <Slider
                 id="pitch"
                 min={0.5}
@@ -240,7 +237,7 @@ export default function BhashaVoicePage() {
           </div>
            {audioUrl && (
             <div className="space-y-2">
-              <Label>Preview</Label>
+              <Label className="text-muted-foreground">Preview</Label>
               <audio 
                 controls 
                 ref={audioRef}
@@ -265,15 +262,15 @@ export default function BhashaVoicePage() {
             {isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
             {isPlaying ? 'Pause' : 'Play'}
           </Button>
-           <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting}>
-            {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
+           <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
+            {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Volume2 className="mr-2 h-5 w-5" />}
             {isConverting ? 'Converting...' : 'Convert'}
           </Button>
-          <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting}>
+          <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting} className="border-border hover:bg-accent hover:text-accent-foreground">
             <Download className="mr-2 h-5 w-5" />
             Download
           </Button>
-          <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || isConverting}>
+          <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || isConverting} className="border-border hover:bg-accent hover:text-accent-foreground">
             <Share2 className="mr-2 h-5 w-5" />
             Share
           </Button>
