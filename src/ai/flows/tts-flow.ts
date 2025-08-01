@@ -4,25 +4,11 @@
  * @fileOverview A text-to-speech flow using Genkit.
  *
  * - speak - A function that handles the text to speech conversion.
- * - SpeakInput - The input type for the speak function.
- * - SpeakOutput - The return type for the speak function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
 import wav from 'wav';
-
-export const SpeakInputSchema = z.object({
-  text: z.string(),
-  voice: z.string().optional(),
-  lang: z.string().optional(),
-});
-export type SpeakInput = z.infer<typeof SpeakInputSchema>;
-
-export const SpeakOutputSchema = z.object({
-  audio: z.string().describe("The generated audio as a base64-encoded data URI."),
-});
-export type SpeakOutput = z.infer<typeof SpeakOutputSchema>;
+import { SpeakInput, SpeakOutput, SpeakInputSchema, SpeakOutputSchema } from './tts-schema';
 
 export async function speak(input: SpeakInput): Promise<SpeakOutput> {
   return ttsFlow(input);
@@ -40,10 +26,8 @@ const ttsFlow = ai.defineFlow(
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
-            // Hindi voices: Algenib, Achernar
-            // English (India) voices: Shaula, Gemma
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: input.lang === 'hi-IN' ? 'Algenib' : 'Shaula' },
+            prebuiltVoiceConfig: { voiceName: input.voice || 'Algenib' },
           },
         },
       },

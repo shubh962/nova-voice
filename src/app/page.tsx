@@ -12,112 +12,89 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { speak } from '@/ai/flows/tts-flow';
+import type { SpeakOutput } from '@/ai/flows/tts-schema';
+
+const HINDI_VOICES = ['Algenib', 'Achernar'];
+const ENGLISH_VOICES = ['Shaula', 'Gemma'];
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
   const [language, setLanguage] = useState('hi-IN');
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [pitch, setPitch] = useState(1);
   const [rate, setRate] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [selectedVoiceName, setSelectedVoiceName] = useState<string>(HINDI_VOICES[0]);
   
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     setIsMounted(true);
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const handleVoicesChanged = () => {
-        const availableVoices = window.speechSynthesis.getVoices();
-        const indianVoices = availableVoices.filter(voice => voice.lang.endsWith('-IN'));
-        setVoices(indianVoices);
-      };
-
-      handleVoicesChanged(); // Initial fetch
-      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
-
-      return () => {
-        window.speechSynthesis.onvoiceschanged = null;
-        window.speechSynthesis.cancel();
-      };
-    } else {
-      setIsSupported(false);
+    if (typeof window !== 'undefined' && !('speechSynthesis' in window)) {
+        setIsSupported(false);
     }
   }, []);
 
   useEffect(() => {
-    const filteredVoices = voices.filter(voice => voice.lang === language);
-    setSelectedVoice(filteredVoices[0] || null);
     setAudioUrl(null);
-  }, [language, voices]);
+    if (language === 'hi-IN') {
+      setSelectedVoiceName(HINDI_VOICES[0]);
+    } else {
+      setSelectedVoiceName(ENGLISH_VOICES[0]);
+    }
+  }, [language]);
 
   useEffect(() => {
     setAudioUrl(null);
-  }, [text, selectedVoice, pitch, rate]);
+  }, [text, selectedVoiceName, pitch, rate]);
 
-  const handlePlayPause = useCallback(() => {
-    if (!text || !selectedVoice) return;
-
+  const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
-      if (isPaused) {
-        window.speechSynthesis.resume();
-      } else {
-        window.speechSynthesis.pause();
-      }
-    } else {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.voice = selectedVoice;
-      utterance.pitch = pitch;
-      utterance.rate = rate;
-      
-      utterance.onstart = () => {
-        setIsPlaying(true);
-        setIsPaused(false);
-      };
-      utterance.onpause = () => setIsPaused(true);
-      utterance.onresume = () => setIsPaused(false);
-      utterance.onend = () => {
-        setIsPlaying(false);
-        setIsPaused(false);
-      };
-      utterance.onerror = (event) => {
-        console.error('SpeechSynthesisUtterance.onerror', event);
-        setIsPlaying(false);
-        setIsPaused(false);
-        toast({
-          variant: "destructive",
-          title: "Playback Error",
-          description: "An error occurred during speech synthesis.",
-        })
-      };
-
-      utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
+      audioRef.current?.pause();
+      setIsPlaying(false);
+      return;
     }
-  }, [text, selectedVoice, pitch, rate, isPlaying, isPaused, toast]);
 
-  const handleConvert = useCallback(async () => {
-    if (!text || !selectedVoice) return;
+    if (audioUrl) {
+      audioRef.current?.play();
+      setIsPlaying(true);
+    } else {
+      await handleConvert(true);
+    }
+  }, [isPlaying, audioUrl]);
+
+  const handleConvert = useCallback(async (playAfter = false) => {
+    if (!text) return;
     setIsConverting(true);
     setAudioUrl(null);
     try {
-      const response = await speak({
+      const response: SpeakOutput = await speak({
         text,
-        voice: selectedVoice.name,
-        lang: selectedVoice.lang
+        voice: selectedVoiceName,
+        lang: language
       });
       if (response.audio) {
         setAudioUrl(response.audio);
-        toast({
-          title: "Conversion Successful",
-          description: "Your text has been converted to audio.",
-        });
+        if (!playAfter) {
+            toast({
+              title: "Conversion Successful",
+              description: "Your text has been converted to audio.",
+            });
+        }
+        if (playAfter) {
+          // A bit of a hack to play after state has updated
+          setTimeout(() => {
+            if (audioRef.current) {
+              audioRef.current.src = response.audio;
+              audioRef.current?.play();
+              setIsPlaying(true);
+            }
+          }, 100);
+        }
       } else {
         throw new Error("Audio data not received.");
       }
@@ -131,7 +108,7 @@ export default function BhashaVoicePage() {
     } finally {
       setIsConverting(false);
     }
-  }, [text, selectedVoice, toast]);
+  }, [text, language, selectedVoiceName, toast]);
 
   const handleDownload = useCallback(() => {
     if (!audioUrl) return;
@@ -167,8 +144,8 @@ export default function BhashaVoicePage() {
     }
   }, [text, toast]);
   
-  const filteredVoices = voices.filter(v => v.lang === language);
-  
+  const voicesForLanguage = language === 'hi-IN' ? HINDI_VOICES : ENGLISH_VOICES;
+
   if (!isMounted) return null;
 
   return (
@@ -185,9 +162,9 @@ export default function BhashaVoicePage() {
           {!isSupported && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Browser Not Supported</AlertTitle>
+              <AlertTitle>Feature Not Fully Supported</AlertTitle>
               <AlertDescription>
-                Your browser does not support the Web Speech API. Please try a different browser like Chrome or Firefox.
+                Your browser may not support all features. Audio generation will work, but real-time playback may be unavailable.
               </AlertDescription>
             </Alert>
           )}
@@ -200,12 +177,12 @@ export default function BhashaVoicePage() {
               setAudioUrl(null);
             }}
             className="min-h-[150px] text-base resize-none focus:ring-accent"
-            disabled={!isSupported || isPlaying || isConverting}
+            disabled={isConverting}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
-              <Select value={language} onValueChange={setLanguage} disabled={!isSupported || isPlaying || isConverting}>
+              <Select value={language} onValueChange={setLanguage} disabled={isConverting}>
                 <SelectTrigger id="language" className="focus:ring-accent">
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
@@ -218,23 +195,19 @@ export default function BhashaVoicePage() {
             <div className="space-y-2">
               <Label htmlFor="voice">Voice</Label>
               <Select 
-                value={selectedVoice?.name || ''} 
-                onValueChange={(name) => setSelectedVoice(voices.find(v => v.name === name) || null)}
-                disabled={!isSupported || isPlaying || filteredVoices.length === 0 || isConverting}
+                value={selectedVoiceName} 
+                onValueChange={setSelectedVoiceName}
+                disabled={isConverting}
               >
                 <SelectTrigger id="voice" className="focus:ring-accent">
                   <SelectValue placeholder="Select voice" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredVoices.length > 0 ? (
-                    filteredVoices.map((voice) => (
-                      <SelectItem key={voice.name} value={voice.name}>
-                        {voice.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-voice" disabled>No voices available</SelectItem>
-                  )}
+                  {voicesForLanguage.map((voice) => (
+                    <SelectItem key={voice} value={voice}>
+                      {voice}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -249,7 +222,7 @@ export default function BhashaVoicePage() {
                 step={0.1}
                 value={[rate]}
                 onValueChange={(value) => setRate(value[0])}
-                disabled={!isSupported || isPlaying || isConverting}
+                disabled={isConverting}
               />
             </div>
             <div className="space-y-2">
@@ -261,14 +234,22 @@ export default function BhashaVoicePage() {
                 step={0.1}
                 value={[pitch]}
                 onValueChange={(value) => setPitch(value[0])}
-                disabled={!isSupported || isPlaying || isConverting}
+                disabled={isConverting}
               />
             </div>
           </div>
            {audioUrl && (
             <div className="space-y-2">
               <Label>Preview</Label>
-              <audio controls src={audioUrl} className="w-full">
+              <audio 
+                controls 
+                ref={audioRef}
+                src={audioUrl} 
+                className="w-full"
+                onEnded={() => setIsPlaying(false)}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+              >
                 Your browser does not support the audio element.
               </audio>
             </div>
@@ -278,21 +259,21 @@ export default function BhashaVoicePage() {
           <Button 
             onClick={handlePlayPause} 
             size="lg" 
-            disabled={!text || !selectedVoice || !isSupported || isConverting} 
+            disabled={!text || isConverting} 
             className="w-32 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            {isPlaying && !isPaused ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
-            {isPlaying ? (isPaused ? 'Resume' : 'Pause') : 'Play'}
+            {isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
+            {isPlaying ? 'Pause' : 'Play'}
           </Button>
-           <Button onClick={handleConvert} size="lg" disabled={!text || !selectedVoice || !isSupported || isPlaying || isConverting}>
+           <Button onClick={() => handleConvert()} size="lg" disabled={!text || isConverting}>
             {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
             {isConverting ? 'Converting...' : 'Convert'}
           </Button>
-          <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting || isPlaying}>
+          <Button onClick={handleDownload} variant="outline" size="lg" disabled={!audioUrl || isConverting}>
             <Download className="mr-2 h-5 w-5" />
             Download
           </Button>
-          <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || !isSupported || isPlaying || isConverting}>
+          <Button onClick={handleShare} variant="outline" size="lg" disabled={!text || isConverting}>
             <Share2 className="mr-2 h-5 w-5" />
             Share
           </Button>
