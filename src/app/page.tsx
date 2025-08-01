@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins } from 'lucide-react';
+import { Play, Pause, Download, Share2, Volume2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const HINDI_VOICES = [
   { id: 'Algenib', name: 'Shubham' },
@@ -23,6 +24,49 @@ const HINDI_VOICES = [
 const ENGLISH_VOICES = ['Rasalgethi', 'Sadachbia', 'Vindemiatrix', 'Zubenelgenubi'];
 const CONVERSION_COST = 250;
 const INITIAL_COINS = 500;
+
+const PLANS = [
+    {
+      name: 'Starter',
+      icon: Gem,
+      price: '₹99',
+      duration: '1 Month',
+      coins: '5,000 Coins',
+      conversions: '~20',
+      bestFor: 'Beginners / Casual use',
+      featured: false,
+    },
+    {
+      name: 'Pro',
+      icon: Rocket,
+      price: '₹249',
+      duration: '3 Months',
+      coins: '18,000 Coins',
+      conversions: '~72',
+      bestFor: 'Regular Creators',
+      featured: true,
+    },
+    {
+      name: 'Business',
+      icon: Briefcase,
+      price: '₹499',
+      duration: '6 Months',
+      coins: '40,000 Coins',
+      conversions: '~160',
+      bestFor: 'Small Teams / Marketers',
+      featured: false,
+    },
+    {
+      name: 'Ultimate',
+      icon: Crown,
+      price: '₹899',
+      duration: '12 Months',
+      coins: '90,000 Coins',
+      conversions: '~360',
+      bestFor: 'Power Users & Agencies',
+      featured: false,
+    },
+  ];
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
@@ -205,6 +249,13 @@ export default function BhashaVoicePage() {
 
   const hasEnoughCoins = coins >= CONVERSION_COST;
 
+  const handleChoosePlan = () => {
+    toast({
+      title: 'Coming Soon!',
+      description: 'Payment integration is not yet implemented.',
+    });
+  };
+
   if (!isMounted) return null;
 
   return (
@@ -326,6 +377,50 @@ export default function BhashaVoicePage() {
             </Button>
           </CardFooter>
         </Card>
+
+        <section className="w-full max-w-6xl mt-12 md:mt-20">
+            <div className="text-center mb-10">
+                <h2 className="text-4xl md:text-5xl font-bold text-foreground">Unlock More Power</h2>
+                <p className="text-lg text-muted-foreground mt-2">Choose a plan that fits your creative needs.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {PLANS.map((plan) => (
+                    <Card key={plan.name} className={cn(
+                        "flex flex-col rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105",
+                        plan.featured ? "border-primary border-2 shadow-primary/30" : "border-border"
+                    )}>
+                        <CardHeader className="p-6 bg-card/80">
+                            <div className="flex items-center gap-3">
+                                <plan.icon className={cn("h-8 w-8", plan.featured ? "text-primary" : "text-accent")} />
+                                <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
+                            </div>
+                            {plan.featured && <Badge className="w-fit bg-primary text-primary-foreground">Most Popular</Badge>}
+                        </CardHeader>
+                        <CardContent className="flex-grow p-6 space-y-4">
+                            <div className="text-4xl font-extrabold text-foreground">{plan.price} <span className="text-base font-medium text-muted-foreground">/ {plan.duration}</span></div>
+                            <ul className="space-y-2 text-foreground/90">
+                                <li className="flex items-center gap-2"><Coins className="h-5 w-5 text-yellow-400" /> <span>{plan.coins}</span></li>
+                                <li className="flex items-center gap-2"><Disc3 className="h-5 w-5 text-teal-400" /> <span>Est. {plan.conversions} conversions</span></li>
+                            </ul>
+                            <p className="text-sm text-muted-foreground">{plan.bestFor}</p>
+                        </CardContent>
+                        <CardFooter className="p-6 mt-auto">
+                            <Button
+                                onClick={handleChoosePlan}
+                                size="lg"
+                                className={cn(
+                                "w-full font-bold",
+                                plan.featured ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-accent text-accent-foreground hover:bg-accent/90"
+                                )}
+                            >
+                                Choose Plan
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        </section>
+
       </main>
       <footer className="w-full p-4 text-center text-muted-foreground">
         <p className="flex items-center justify-center gap-2">
