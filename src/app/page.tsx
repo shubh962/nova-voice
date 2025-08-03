@@ -130,10 +130,10 @@ export default function NovaVoicePage() {
         setIsPlaying(false);
     }
   
-    // Start conversion in the background
+    // Start conversion in the background, it will run in parallel with the ad.
     conversionPromiseRef.current = performConversion();
   
-    // Define what to do after the ad
+    // Define what to do after the ad completes.
     postAdActionRef.current = async () => {
       try {
         const response = await conversionPromiseRef.current;
@@ -142,6 +142,7 @@ export default function NovaVoicePage() {
           setAudioUrl(response.audio);
           
           if (playAfter) {
+            // Use a short timeout to ensure the audio element is updated before playing
             setTimeout(() => {
               if (audioRef.current) {
                 audioRef.current.src = response.audio;
@@ -157,6 +158,7 @@ export default function NovaVoicePage() {
             });
           }
         } else {
+          // This case should be rare if performConversion throws errors properly
           throw new Error("Audio data not received after conversion.");
         }
       } catch (error: any) {
@@ -174,40 +176,45 @@ export default function NovaVoicePage() {
           });
         }
       } finally {
-        setIsConverting(false);
+        setIsConverting(false); // End converting state
         conversionPromiseRef.current = null;
         postAdActionRef.current = null;
       }
     };
   
+    // Show the ad. The onComplete logic will handle what happens next.
     setShowRewardedAd(true);
   };
   
   const handleAdComplete = (rewarded: boolean) => {
-    setShowRewardedAd(false);
+    // This function is the single point of entry after an ad is closed.
+    setShowRewardedAd(false); // Always hide the ad component
     
     if (rewarded) {
+        // This is for the reward from watching the ad itself.
+        const newCoins = coins + REWARD_AMOUNT;
+        handleSetCoins(newCoins);
         toast({
           title: 'Ad Completed!',
           description: `You've earned ${REWARD_AMOUNT} coins!`,
         });
-        const newCoins = coins + REWARD_AMOUNT;
-        handleSetCoins(newCoins);
         
+        // If there was an action pending (like Play or Convert), execute it.
         if (postAdActionRef.current) {
           postAdActionRef.current();
         }
     } else {
+        // User closed the ad without getting a reward.
         toast({
           variant: 'destructive',
           title: 'Ad Not Completed',
           description: 'You must watch the full ad to proceed.',
         });
+        // Reset the state since the action was cancelled.
         setIsConverting(false);
         conversionPromiseRef.current = null;
+        postAdActionRef.current = null;
     }
-    
-    postAdActionRef.current = null;
   };
 
   const handleConvert = () => {
@@ -226,10 +233,10 @@ export default function NovaVoicePage() {
         audioRef.current.play();
         setIsPlaying(true);
     } else {
+      // If no audio is ready, start the process which includes showing an ad.
       startConversionProcess(true);
     }
   };
-
 
   useEffect(() => {
     setIsMounted(true);
@@ -543,7 +550,7 @@ export default function NovaVoicePage() {
             <AlertDialogAction
               onClick={() => {
                 setShowNoCoinsAlert(false);
-                postAdActionRef.current = null;
+                postAdActionRef.current = null; // No action after this ad, it's just for earning coins.
                 setShowRewardedAd(true);
               }}
               className="bg-green-600 hover:bg-green-700"

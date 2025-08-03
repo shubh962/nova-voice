@@ -14,6 +14,7 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onComplete }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Prevent running this effect multiple times
     if (adSlotRef.current) {
         return;
     }
@@ -21,16 +22,22 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onComplete }) => {
     const adUnitPath = '/22639388115/rewarded_web_example';
 
     const rewardedSlotReady = (event: googletag.events.RewardedSlotReadyEvent) => {
+      // This is called when the ad is ready to be shown.
       event.makeRewardedVisible();
     };
 
     const rewardedSlotGranted = (event: googletag.events.RewardedSlotGrantedEvent) => {
+      // This is called when the user has earned the reward.
+      // The grant may happen before the ad is even closed.
       isRewardedRef.current = true;
     };
 
     const rewardedSlotClosed = () => {
+      // This is called when the user closes the ad.
+      // We now call the onComplete callback with the reward status.
       onComplete(isRewardedRef.current);
       
+      // Clean up listeners and destroy the slot. This is crucial.
       window.googletag.cmd.push(() => {
         if (adSlotRef.current) {
           googletag.pubads().removeEventListener('rewardedSlotReady', rewardedSlotReady);
@@ -43,10 +50,12 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onComplete }) => {
     };
 
     window.googletag.cmd.push(() => {
+      // Add the event listeners.
       googletag.pubads().addEventListener('rewardedSlotReady', rewardedSlotReady);
       googletag.pubads().addEventListener('rewardedSlotGranted', rewardedSlotGranted);
       googletag.pubads().addEventListener('rewardedSlotClosed', rewardedSlotClosed);
 
+      // Define the ad slot.
       const rewardedSlot = googletag.defineOutOfPageSlot(adUnitPath, googletag.enums.OutOfPageFormat.REWARDED);
       
       if (!rewardedSlot) {
@@ -56,17 +65,19 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onComplete }) => {
           title: 'Ad Error',
           description: 'Could not load the ad. Please try again later.',
         });
-        onComplete(false);
+        onComplete(false); // Signal failure
         return;
       }
 
       rewardedSlot.addService(googletag.pubads());
       adSlotRef.current = rewardedSlot;
       
+      // Enable services and display the ad.
       googletag.enableServices();
       googletag.display(rewardedSlot);
     });
 
+    // Return a cleanup function to be safe.
     return () => {
       window.googletag.cmd.push(() => {
         if (adSlotRef.current) {
@@ -80,7 +91,7 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onComplete }) => {
     };
   }, [onComplete, toast]);
 
-  return null;
+  return null; // This component does not render anything itself.
 };
 
 export default RewardedAd;
