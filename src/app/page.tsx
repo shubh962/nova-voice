@@ -180,7 +180,7 @@ export default function NovaVoicePage() {
       setAdRewardCallback(() => () => performConversion(true));
       setShowRewardedAd(true);
     }
-  }, [isPlaying, audioUrl, speechRate, performConversion, coins]);
+  }, [isPlaying, audioUrl, speechRate, performConversion]);
 
   const handleAdReward = () => {
     const newCoins = coins + REWARD_AMOUNT;
@@ -516,8 +516,5 @@ export default function NovaVoicePage() {
       </AlertDialog>
     </div>
   );
-}
-
-
 
     
