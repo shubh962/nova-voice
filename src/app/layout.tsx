@@ -62,9 +62,21 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <Script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3940256099942544"
-          crossOrigin="anonymous"
+          src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"
           strategy="afterInteractive"
+        />
+        <Script
+          id="gpt-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.googletag = window.googletag || {cmd: []};
+              googletag.cmd.push(function() {
+                googletag.pubads().enableSingleRequest();
+                googletag.enableServices();
+              });
+            `,
+          }}
         />
       </head>
       <body className="antialiased">

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Disc3, Code, Coins, AlertTriangle, LogOut } from 'lucide-react';
+import { Play, Pause, Download, Share2, Disc3, Code, Coins, AlertTriangle, LogOut, Clapperboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,7 @@ import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Script from 'next/script';
+import RewardedAd from '@/components/rewarded-ad';
 
 const HINDI_VOICES = [
   { id: 'Algenib', name: 'Shubham' },
@@ -37,6 +38,7 @@ const HINDI_VOICES = [
 const ENGLISH_VOICES = ['Rasalgethi', 'Sadachbia', 'Vindemiatrix', 'Zubenelgenubi'];
 const CONVERSION_COST = 250;
 const INITIAL_COINS = 500;
+const REWARD_AMOUNT = 100;
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -77,13 +79,24 @@ export default function NovaVoicePage() {
   const [speechRate, setSpeechRate] = useState(1);
   const [coins, setCoins] = useState(INITIAL_COINS);
   const [showNoCoinsAlert, setShowNoCoinsAlert] = useState(false);
+  const [showRewardedAd, setShowRewardedAd] = useState(false);
+  const [adRewardCallback, setAdRewardCallback] = useState<(() => void) | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const adRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const { user, logout } = useAuth();
 
-  const handleConvert = useCallback(async (playAfter = false) => {
+  const handleSetCoins = useCallback((newCoins: number) => {
+    setCoins(newCoins);
+    if (user) {
+      localStorage.setItem(`nova-voice-coins-${user.uid}`, newCoins.toString());
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem(`nova-voice-last-reset-${user.uid}`, today);
+    }
+  }, [user]);
+
+  const performConversion = useCallback(async (playAfter = false) => {
     if (!text || !user) return;
 
     if (coins < CONVERSION_COST) {
@@ -104,11 +117,7 @@ export default function NovaVoicePage() {
       });
       
       const newCoinBalance = coins - CONVERSION_COST;
-      setCoins(newCoinBalance);
-      const today = new Date().toISOString().split('T')[0];
-      localStorage.setItem(`nova-voice-coins-${user.uid}`, newCoinBalance.toString());
-      localStorage.setItem(`nova-voice-last-reset-${user.uid}`, today);
-
+      handleSetCoins(newCoinBalance);
 
       if (response.audio) {
         setAudioUrl(response.audio);
@@ -149,14 +158,14 @@ export default function NovaVoicePage() {
     } finally {
       setIsConverting(false);
     }
-  }, [text, language, selectedVoiceName, toast, speechRate, coins, user]);
+  }, [text, language, selectedVoiceName, toast, speechRate, coins, user, handleSetCoins]);
+
+  const handleConvert = useCallback(() => {
+    setAdRewardCallback(() => () => performConversion(false));
+    setShowRewardedAd(true);
+  }, [performConversion]);
 
   const handlePlayPause = useCallback(async () => {
-    if (coins < CONVERSION_COST && !audioUrl) {
-      setShowNoCoinsAlert(true);
-      return;
-    }
-
     if (isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
@@ -168,9 +177,24 @@ export default function NovaVoicePage() {
         audioRef.current.play();
         setIsPlaying(true);
     } else {
-      await handleConvert(true);
+      setAdRewardCallback(() => () => performConversion(true));
+      setShowRewardedAd(true);
     }
-  }, [isPlaying, audioUrl, speechRate, handleConvert, coins]);
+  }, [isPlaying, audioUrl, speechRate, performConversion, coins]);
+
+  const handleAdReward = () => {
+    const newCoins = coins + REWARD_AMOUNT;
+    handleSetCoins(newCoins);
+    toast({
+      title: 'Reward Granted!',
+      description: `You've earned ${REWARD_AMOUNT} coins!`,
+    });
+    if (adRewardCallback) {
+      adRewardCallback();
+    }
+    setShowRewardedAd(false);
+    setAdRewardCallback(null);
+  };
 
 
   useEffect(() => {
@@ -181,15 +205,12 @@ export default function NovaVoicePage() {
       const today = new Date().toISOString().split('T')[0];
 
       if (savedCoinsStr === null || (lastResetDate && lastResetDate < today)) {
-        // New user or daily reset
-        setCoins(INITIAL_COINS);
-        localStorage.setItem(`nova-voice-coins-${user.uid}`, INITIAL_COINS.toString());
-        localStorage.setItem(`nova-voice-last-reset-${user.uid}`, today);
+        handleSetCoins(INITIAL_COINS);
       } else {
         setCoins(parseInt(savedCoinsStr, 10));
       }
     }
-  }, [user]);
+  }, [user, handleSetCoins]);
 
   useEffect(() => {
     setAudioUrl(null);
@@ -279,6 +300,12 @@ export default function NovaVoicePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
+      {showRewardedAd && (
+        <RewardedAd
+          onReward={handleAdReward}
+          onClose={() => setShowRewardedAd(false)}
+        />
+      )}
       <Script
         id="structured-data"
         type="application/ld+json"
@@ -324,7 +351,7 @@ export default function NovaVoicePage() {
 
       <main className="w-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
         <section className="w-full max-w-3xl mb-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-2">AI Text-to-Speech for Indian Voices</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-_">AI Text-to-Speech for Indian Voices</h2>
             <p className="text-muted-foreground md:text-lg">
                 Instantly convert Hindi and English text into natural-sounding speech. Perfect for content creators, educators, and businesses targeting an Indian audience.
             </p>
@@ -427,7 +454,7 @@ export default function NovaVoicePage() {
                 {isConverting && audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
                 {isConverting && audioUrl ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
               </Button>
-              <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
+              <Button onClick={handleConvert} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
                 {isConverting && !audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Code className="mr-2 h-5 w-5" />}
                 {isConverting && !audioUrl ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
               </Button>
@@ -446,7 +473,7 @@ export default function NovaVoicePage() {
         <div className="w-full max-w-3xl mt-8" ref={adRef}>
             <ins 
                 className="adsbygoogle"
-                style={{ display: 'block', border: '1px solid #ff0000', minHeight: '100px' }}
+                style={{ display: 'block' }}
                 data-ad-client="ca-pub-3940256099942544"
                 data-ad-slot="6300978111"
                 data-ad-format="auto"
@@ -467,11 +494,23 @@ export default function NovaVoicePage() {
               Not Enough Coins
             </AlertDialogTitle>
             <AlertDialogDescription>
-              You've run out of free coins for today. Your balance will reset automatically tomorrow.
+              You've run out of free coins for today. Watch a short ad to earn more or wait for your balance to reset tomorrow.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowNoCoinsAlert(false)}>OK</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setShowNoCoinsAlert(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowNoCoinsAlert(false);
+                setAdRewardCallback(() => () => {}); // Empty callback, just earn coins
+                setShowRewardedAd(true);
+              }}
+              className="bg-green-600 hover:bg-green-700"
+              style={{ backgroundColor: 'hsl(var(--cta))' }}
+            >
+              <Clapperboard className="mr-2 h-5 w-5" />
+              Watch Ad
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
