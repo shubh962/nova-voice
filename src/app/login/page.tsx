@@ -16,10 +16,10 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
             <Logo className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">BhashaVoice</h1>
+            <h1 className="text-3xl font-bold text-foreground">NovaVoice</h1>
           </div>
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to continue to BhashaVoice and generate AI audio for free.</CardDescription>
+          <CardDescription>Sign in to continue to NovaVoice and generate AI audio for free.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={signInWithGoogle} className="w-full" variant="outline">

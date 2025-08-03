@@ -8,9 +8,9 @@ import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
-const APP_NAME = 'BhashaVoice';
-const APP_URL = 'https://bhashavoice.com'; // Replace with your actual domain
-const APP_DESCRIPTION = 'Generate realistic AI voices online with BhashaVoice. Free text-to-speech (TTS) with natural-sounding Hindi and English Indian accents. Convert text to audio instantly.';
+const APP_NAME = 'NovaVoice';
+const APP_URL = 'https://novavoice.com'; // Replace with your actual domain
+const APP_DESCRIPTION = 'Generate realistic AI voices online with NovaVoice. Free text-to-speech (TTS) with natural-sounding Hindi and English Indian accents. Convert text to audio instantly.';
 const APP_IMAGE_PREVIEW = `${APP_URL}/og-preview.png`; // Replace with your actual preview image
 
 export const metadata: Metadata = {
@@ -20,11 +20,11 @@ export const metadata: Metadata = {
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
-  keywords: ['text to speech', 'TTS', 'AI voice', 'Indian accent', 'Hindi TTS', 'English TTS', 'free tts', 'online tts', 'BhashaVoice', 'text to audio', 'voice generator'],
+  keywords: ['text to speech', 'TTS', 'AI voice', 'Indian accent', 'Hindi TTS', 'English TTS', 'free tts', 'online tts', 'NovaVoice', 'text to audio', 'voice generator'],
   applicationName: APP_NAME,
-  authors: [{ name: 'BhashaVoice Team', url: APP_URL }],
-  creator: 'BhashaVoice Team',
-  publisher: 'BhashaVoice',
+  authors: [{ name: 'NovaVoice Team', url: APP_URL }],
+  creator: 'NovaVoice Team',
+  publisher: 'NovaVoice',
   openGraph: {
     type: 'website',
     url: APP_URL,
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
       url: APP_IMAGE_PREVIEW,
       width: 1200,
       height: 630,
-      alt: 'BhashaVoice App Preview',
+      alt: 'NovaVoice App Preview',
     }],
   },
   twitter: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     title: `${APP_NAME} | Free AI TTS for Indian Accents`,
     description: APP_DESCRIPTION,
     images: [APP_IMAGE_PREVIEW],
-    creator: '@BhashaVoice', // Replace with your Twitter handle if you have one
+    creator: '@NovaVoice', // Replace with your Twitter handle if you have one
   },
   robots: 'index, follow',
 };

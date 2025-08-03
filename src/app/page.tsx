@@ -41,7 +41,7 @@ const INITIAL_COINS = 500;
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "BhashaVoice",
+  "name": "NovaVoice",
   "operatingSystem": "WEB",
   "applicationCategory": "MultimediaApplication",
   "aggregateRating": {
@@ -66,7 +66,7 @@ const structuredData = {
   ]
 };
 
-export default function BhashaVoicePage() {
+export default function NovaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
   const [language, setLanguage] = useState('hi-IN');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -106,8 +106,8 @@ export default function BhashaVoicePage() {
       const newCoinBalance = coins - CONVERSION_COST;
       setCoins(newCoinBalance);
       const today = new Date().toISOString().split('T')[0];
-      localStorage.setItem(`bhasha-voice-coins-${user.uid}`, newCoinBalance.toString());
-      localStorage.setItem(`bhasha-voice-last-reset-${user.uid}`, today);
+      localStorage.setItem(`nova-voice-coins-${user.uid}`, newCoinBalance.toString());
+      localStorage.setItem(`nova-voice-last-reset-${user.uid}`, today);
 
 
       if (response.audio) {
@@ -176,15 +176,15 @@ export default function BhashaVoicePage() {
   useEffect(() => {
     setIsMounted(true);
     if (user) {
-      const savedCoinsStr = localStorage.getItem(`bhasha-voice-coins-${user.uid}`);
-      const lastResetDate = localStorage.getItem(`bhasha-voice-last-reset-${user.uid}`);
+      const savedCoinsStr = localStorage.getItem(`nova-voice-coins-${user.uid}`);
+      const lastResetDate = localStorage.getItem(`nova-voice-last-reset-${user.uid}`);
       const today = new Date().toISOString().split('T')[0];
 
       if (savedCoinsStr === null || (lastResetDate && lastResetDate < today)) {
         // New user or daily reset
         setCoins(INITIAL_COINS);
-        localStorage.setItem(`bhasha-voice-coins-${user.uid}`, INITIAL_COINS.toString());
-        localStorage.setItem(`bhasha-voice-last-reset-${user.uid}`, today);
+        localStorage.setItem(`nova-voice-coins-${user.uid}`, INITIAL_COINS.toString());
+        localStorage.setItem(`nova-voice-last-reset-${user.uid}`, today);
       } else {
         setCoins(parseInt(savedCoinsStr, 10));
       }
@@ -231,7 +231,7 @@ export default function BhashaVoicePage() {
     if (!audioUrl) return;
     const link = document.createElement('a');
     link.href = audioUrl;
-    link.download = 'BhashaVoice-speech.wav';
+    link.download = 'NovaVoice-speech.wav';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -255,7 +255,7 @@ export default function BhashaVoicePage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'BhashaVoice Speech',
+          title: 'NovaVoice Speech',
           text: text,
         });
       } catch (error: any) {
@@ -287,7 +287,7 @@ export default function BhashaVoicePage() {
        <header className="w-full p-4 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
          <div className="flex justify-center items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">BhashaVoice</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">NovaVoice</h1>
          </div>
          <div className="flex items-center gap-2 sm:gap-4">
              <div className="flex items-center gap-2 bg-amber-100/50 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-full px-2 sm:px-3 py-1">
@@ -456,7 +456,7 @@ export default function BhashaVoicePage() {
       </main>
       <footer className="w-full p-4 text-center text-muted-foreground text-sm">
         <p className="flex items-center justify-center gap-2">
-          Copyright © {new Date().getFullYear()} BhashaVoice. All rights reserved.
+          Copyright © {new Date().getFullYear()} NovaVoice. All rights reserved.
         </p>
       </footer>
       <AlertDialog open={showNoCoinsAlert} onOpenChange={setShowNoCoinsAlert}>
