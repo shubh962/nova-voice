@@ -406,7 +406,7 @@ export default function BhashaVoicePage() {
             <ins 
                 ref={adRef}
                 className="adsbygoogle"
-                style={{ display: 'block', minHeight: '100px' }}
+                style={{ display: 'block', minHeight: '100px', border: '2px dashed hsl(var(--destructive))' }}
                 data-ad-client="ca-pub-3940256099942544"
                 data-ad-slot="6300978111"
                 data-ad-format="auto"
@@ -438,3 +438,5 @@ export default function BhashaVoicePage() {
       </AlertDialog>
     </div>
   );
+
+    
