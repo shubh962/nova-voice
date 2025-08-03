@@ -80,7 +80,7 @@ export default function NovaVoicePage() {
   const [coins, setCoins] = useState(INITIAL_COINS);
   const [showNoCoinsAlert, setShowNoCoinsAlert] = useState(false);
   const [showRewardedAd, setShowRewardedAd] = useState(false);
-  const [adRewardCallback, setAdRewardCallback] = useState<(() => void) | null>(null);
+  const [postAdAction, setPostAdAction] = useState<(() => void) | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const adRef = useRef<HTMLDivElement | null>(null);
@@ -148,8 +148,8 @@ export default function NovaVoicePage() {
     // Show the ad
     setShowRewardedAd(true);
 
-    // Set the callback for when the ad is done
-    setAdRewardCallback(() => async () => {
+    // Set the action to perform after the ad is done
+    setPostAdAction(() => async () => {
         try {
             const response = await conversionPromiseRef.current;
             if (response?.audio) {
@@ -202,20 +202,33 @@ export default function NovaVoicePage() {
     }
   };
 
-  const handleAdReward = () => {
-    const newCoins = coins + REWARD_AMOUNT;
-    handleSetCoins(newCoins);
-    toast({
-      title: 'Ad Completed!',
-      description: `You've earned ${REWARD_AMOUNT} coins!`,
-    });
+  const handleAdComplete = (rewarded: boolean) => {
+    setShowRewardedAd(false);
     
-    if (adRewardCallback) {
-      adRewardCallback();
+    if (rewarded) {
+        const newCoins = coins + REWARD_AMOUNT;
+        handleSetCoins(newCoins);
+        toast({
+          title: 'Ad Completed!',
+          description: `You've earned ${REWARD_AMOUNT} coins!`,
+        });
+        
+        if (postAdAction) {
+          postAdAction();
+        }
+    } else {
+        toast({
+          variant: 'destructive',
+          title: 'Ad Not Completed',
+          description: 'You must watch the full ad to get the reward and audio.',
+        });
+        // Reset conversion state if ad was not completed
+        setIsConverting(false);
+        conversionPromiseRef.current = null;
     }
     
-    setShowRewardedAd(false);
-    setAdRewardCallback(null);
+    // Always clear the post-ad action
+    setPostAdAction(null);
   };
 
 
@@ -327,23 +340,7 @@ export default function NovaVoicePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
       {showRewardedAd && (
-        <RewardedAd
-          onReward={handleAdReward}
-          onClose={() => {
-            setShowRewardedAd(false);
-            // If ad is closed without reward, check if conversion is running and handle it
-            if (conversionPromiseRef.current) {
-              toast({
-                variant: 'destructive',
-                title: 'Ad Not Completed',
-                description: 'You must watch the full ad to get the reward and audio.',
-              });
-              // Reset state
-              setIsConverting(false);
-              conversionPromiseRef.current = null;
-            }
-          }}
-        />
+        <RewardedAd onComplete={handleAdComplete} />
       )}
       <Script
         id="structured-data"
@@ -541,7 +538,7 @@ export default function NovaVoicePage() {
               onClick={() => {
                 setShowNoCoinsAlert(false);
                 setShowRewardedAd(true);
-                setAdRewardCallback(() => () => {}); // Just earn coins, no conversion
+                setPostAdAction(() => () => {}); // Just earn coins, no conversion
               }}
               className="bg-green-600 hover:bg-green-700"
               style={{ backgroundColor: 'hsl(var(--cta))' }}
@@ -554,5 +551,3 @@ export default function NovaVoicePage() {
       </AlertDialog>
     </div>
   );
-
-    

@@ -5,38 +5,30 @@ import React, { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface RewardedAdProps {
-  onReward: () => void;
-  onClose: () => void;
+  onComplete: (rewarded: boolean) => void;
 }
 
-const RewardedAd: React.FC<RewardedAdProps> = ({ onReward, onClose }) => {
+const RewardedAd: React.FC<RewardedAdProps> = ({ onComplete }) => {
   const adSlotRef = useRef<googletag.Slot | null>(null);
-  const adContainerRef = useRef<HTMLDivElement | null>(null);
+  const isRewardedRef = useRef(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Test Ad Unit ID, replace with your own. This is for a rewarded ad.
+    // Test Ad Unit ID, replace with your own.
     const adUnitPath = '/22639388115/rewarded_web_example';
 
     const rewardedSlotApiReady = (event: googletag.events.RewardedSlotReadyEvent) => {
-        event.makeRewardedVisible();
+      event.makeRewardedVisible();
     };
 
     const handleRewarded = (event: googletag.events.RewardedSlotGrantedEvent) => {
       if (event.reward) {
-        onReward();
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Ad Not Completed',
-          description: 'You must watch the full ad to get the reward.',
-        });
+        isRewardedRef.current = true;
       }
-      onClose(); // Always close after grant event
     };
 
     const handleSlotClosed = () => {
-      onClose();
+      onComplete(isRewardedRef.current);
     };
 
     window.googletag.cmd.push(() => {
@@ -44,7 +36,6 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onReward, onClose }) => {
       googletag.pubads().addEventListener('rewardedSlotGranted', handleRewarded);
       googletag.pubads().addEventListener('rewardedSlotClosed', handleSlotClosed);
 
-      // defineOutOfPageSlot is the correct method for web rewarded ads.
       const rewardedSlot = googletag.defineOutOfPageSlot(adUnitPath, googletag.enums.OutOfPageFormat.REWARDED);
       
       if (!rewardedSlot) {
@@ -54,7 +45,7 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onReward, onClose }) => {
           title: 'Ad Error',
           description: 'Could not load the ad. Please try again later.',
         });
-        onClose();
+        onComplete(false);
         return;
       }
 
@@ -65,28 +56,22 @@ const RewardedAd: React.FC<RewardedAdProps> = ({ onReward, onClose }) => {
       googletag.display(rewardedSlot);
     });
 
-    const destroyAd = () => {
-        if (adSlotRef.current) {
-            window.googletag.cmd.push(() => {
-                googletag.pubads().removeEventListener('rewardedSlotReady', rewardedSlotApiReady);
-                googletag.pubads().removeEventListener('rewardedSlotGranted', handleRewarded);
-                googletag.pubads().removeEventListener('rewardedSlotClosed', handleSlotClosed);
-                googletag.destroySlots([adSlotRef.current]);
-                adSlotRef.current = null;
-            });
-        }
-    };
-
     return () => {
-      destroyAd();
+      if (adSlotRef.current) {
+        window.googletag.cmd.push(() => {
+          googletag.pubads().removeEventListener('rewardedSlotReady', rewardedSlotApiReady);
+          googletag.pubads().removeEventListener('rewardedSlotGranted', handleRewarded);
+          googletag.pubads().removeEventListener('rewardedSlotClosed', handleSlotClosed);
+          googletag.destroySlots([adSlotRef.current]);
+          adSlotRef.current = null;
+        });
+      }
     };
-  }, [onReward, onClose, toast]);
+  }, [onComplete, toast]);
 
-  // The rewarded ad is an out-of-page (interstitial) ad, 
+  // The rewarded ad is an out-of-page (interstitial) ad,
   // so it doesn't need a visible container div.
   return null;
 };
 
 export default RewardedAd;
-
-    
