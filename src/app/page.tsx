@@ -79,7 +79,7 @@ export default function BhashaVoicePage() {
   const [showNoCoinsAlert, setShowNoCoinsAlert] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const adRef = useRef<HTMLElement | null>(null);
+  const adRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const { user, logout } = useAuth();
 
@@ -211,8 +211,8 @@ export default function BhashaVoicePage() {
   }, [speechRate]);
   
   useEffect(() => {
-    // Check if an ad has already been loaded
-    if (adRef.current && adRef.current.getAttribute("data-ad-status") === "filled") {
+    if (adRef.current && adRef.current.firstChild) {
+      // Ad already loaded
       return;
     }
     
@@ -220,7 +220,7 @@ export default function BhashaVoicePage() {
       // @ts-ignore
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
-      console.error(err);
+      console.error('adsbygoogle.push() error:', err);
     }
   }, []);
 
@@ -446,11 +446,10 @@ export default function BhashaVoicePage() {
           </CardFooter>
         </Card>
         
-        <div className="w-full max-w-3xl mt-8">
+        <div className="w-full max-w-3xl mt-8" ref={adRef}>
             <ins 
-                ref={adRef}
                 className="adsbygoogle"
-                style={{ display: 'block', border: '1px dashed hsl(var(--border))', minHeight: '100px' }}
+                style={{ display: 'block', border: '1px solid #e53e3e', minHeight: '100px' }}
                 data-ad-client="ca-pub-3940256099942544"
                 data-ad-slot="6300978111"
                 data-ad-format="auto"
@@ -481,3 +480,6 @@ export default function BhashaVoicePage() {
       </AlertDialog>
     </div>
   );
+}
+
+    
