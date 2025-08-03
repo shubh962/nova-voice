@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Download, Share2, Disc3, Code, Coins, Gem, Rocket, Briefcase, Crown, AlertTriangle, Zap, Star, LogOut } from 'lucide-react';
+import { Play, Pause, Download, Share2, Disc3, Code, Coins, AlertTriangle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -13,8 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast"
 import { speak } from '@/ai/flows/tts-flow';
 import type { SpeakOutput } from '@/ai/flows/tts-schema';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Logo } from '@/components/logo';
 import { useAuth } from '@/context/auth-context';
@@ -40,53 +36,6 @@ const HINDI_VOICES = [
 const ENGLISH_VOICES = ['Rasalgethi', 'Sadachbia', 'Vindemiatrix', 'Zubenelgenubi'];
 const CONVERSION_COST = 250;
 const INITIAL_COINS = 500;
-
-const PLANS = [
-    {
-      name: 'Monthly',
-      icon: Gem,
-      price: '₹149',
-      coins: '12,500 Coins',
-      conversions: '~50 conversions',
-      features: [],
-      featured: false,
-      badge: null,
-      paymentLink: 'https://razorpay.me/@Payme01/149'
-    },
-    {
-      name: 'Quarterly',
-      icon: Rocket,
-      price: '₹399',
-      coins: '45,000 Coins',
-      conversions: '~180 conversions',
-      features: ['+5 bonus conversions/month'],
-      featured: true,
-      badge: 'Most Popular',
-      paymentLink: 'https://razorpay.me/@Payme01/399'
-    },
-    {
-      name: '6-Month',
-      icon: Briefcase,
-      price: '₹749',
-      coins: '1,00,000 Coins',
-      conversions: '~400 conversions',
-      features: ['Priority queue processing'],
-      featured: false,
-      badge: null,
-      paymentLink: 'https://razorpay.me/@Payme01/749'
-    },
-    {
-      name: 'Yearly',
-      icon: Crown,
-      price: '₹1399',
-      coins: '2,25,000 Coins',
-      conversions: '~900 conversions',
-      features: ['Priority queue', 'Early access to new voices', 'Watermark-free downloads'],
-      featured: false,
-      badge: 'Best Value',
-      paymentLink: 'https://razorpay.me/@Payme01/1399'
-    },
-  ];
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
@@ -275,10 +224,6 @@ export default function BhashaVoicePage() {
 
   const hasEnoughCoins = coins >= CONVERSION_COST;
 
-  const handleChoosePlan = (paymentLink: string) => {
-    window.open(paymentLink, '_blank');
-  };
-
   if (!isMounted || !user) return null;
 
   return (
@@ -293,10 +238,6 @@ export default function BhashaVoicePage() {
                  <Coins className="h-5 w-5 text-amber-500" />
                  <span className="font-bold text-lg text-foreground">{coins.toLocaleString()}</span>
              </div>
-             <Button size="sm" onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>
-                <Zap className="mr-2 h-4 w-4" />
-                Upgrade
-             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -433,58 +374,6 @@ export default function BhashaVoicePage() {
             </div>
           </CardFooter>
         </Card>
-
-        <section id="plans" className="w-full max-w-6xl mt-16 md:mt-24 scroll-mt-20">
-            <div className="text-center mb-10">
-                <h2 className="text-4xl md:text-5xl font-bold text-foreground">Recharge or Upgrade Plan</h2>
-                <p className="text-lg text-muted-foreground mt-2">Choose a plan that fits your creative needs.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {PLANS.map((plan) => (
-                    <Card key={plan.name} className={cn(
-                        "flex flex-col rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105",
-                        plan.featured ? "border-primary border-2 shadow-primary/20" : "border-border"
-                    )}>
-                        {plan.badge && <Badge className={cn("absolute -top-3 right-4 text-primary-foreground", plan.featured ? "bg-primary" : "bg-accent")}>{plan.badge}</Badge>}
-                        <CardHeader className="p-6 bg-card/50">
-                            <div className="flex items-center gap-3">
-                                <plan.icon className={cn("h-8 w-8", plan.featured ? "text-primary" : "text-muted-foreground")} />
-                                <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-grow p-6 space-y-4">
-                            <div className="text-4xl font-extrabold text-foreground">{plan.price}</div>
-                            <div className="space-y-1">
-                              <p className="font-semibold text-primary">{plan.coins}</p>
-                              <p className="text-sm text-muted-foreground">{plan.conversions}</p>
-                            </div>
-                            <ul className="space-y-2 text-foreground/90 text-sm">
-                                {plan.features.map(feature => (
-                                    <li key={feature} className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-green-500" style={{ backgroundColor: 'hsl(var(--cta))' }}></div>
-                                        <span>{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                        <CardFooter className="p-6 mt-auto">
-                            <Button
-                                onClick={() => handleChoosePlan(plan.paymentLink)}
-                                size="lg"
-                                className={cn(
-                                "w-full font-bold",
-                                plan.featured ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-white hover:bg-green-700"
-                                )}
-                                style={!plan.featured ? { backgroundColor: 'hsl(var(--cta))' } : {}}
-                            >
-                                Choose Plan
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
-            </div>
-        </section>
-
       </main>
       <footer className="w-full p-4 text-center text-muted-foreground">
         <p className="flex items-center justify-center gap-2">
@@ -500,17 +389,15 @@ export default function BhashaVoicePage() {
               Not Enough Coins
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Aapke coins khatam ho gaye hain. Recharge kijiye ya Plan upgrade kijiye.
+              Aapke coins khatam ho gaye hain.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' })}>
-              Upgrade Plan
-            </AlertDialogAction>
+            <AlertDialogCancel>OK</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   );
-}
+
+    
