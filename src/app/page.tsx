@@ -241,12 +241,12 @@ export default function BhashaVoicePage() {
        <header className="w-full p-4 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
          <div className="flex justify-center items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">BhashaVoice</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">BhashaVoice</h1>
          </div>
-         <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 bg-amber-100/50 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-full px-3 py-1">
+         <div className="flex items-center gap-2 sm:gap-4">
+             <div className="flex items-center gap-2 bg-amber-100/50 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-full px-2 sm:px-3 py-1">
                  <Coins className="h-5 w-5 text-amber-500" />
-                 <span className="font-bold text-lg text-foreground">{coins.toLocaleString()}</span>
+                 <span className="font-bold text-base sm:text-lg text-foreground">{coins.toLocaleString()}</span>
              </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -278,11 +278,11 @@ export default function BhashaVoicePage() {
 
       <main className="w-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
         <Card className="w-full max-w-3xl shadow-lg bg-card rounded-xl border">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline font-bold text-card-foreground">Create Your Audio</CardTitle>
-            <CardDescription className="text-muted-foreground">Type, select your preferences, and convert to speech in seconds.</CardDescription>
+          <CardHeader className="text-center px-4 sm:px-6">
+            <CardTitle className="text-2xl sm:text-3xl font-headline font-bold text-card-foreground">Create Your Audio</CardTitle>
+            <CardDescription className="text-sm sm:text-base text-muted-foreground">Type, select your preferences, and convert to speech in seconds.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 px-4 md:px-8">
+          <CardContent className="space-y-6 px-4 sm:px-6 md:px-8">
             <Textarea
               placeholder="Type or paste your text here..."
               value={text}
@@ -290,7 +290,7 @@ export default function BhashaVoicePage() {
                 setText(e.target.value);
                 setAudioUrl(null);
               }}
-              className="min-h-[180px] text-base resize-none focus:ring-primary bg-input/50 dark:bg-background rounded-lg"
+              className="min-h-[150px] sm:min-h-[180px] text-base resize-none focus:ring-primary bg-input/50 dark:bg-background rounded-lg"
               disabled={isConverting}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -359,21 +359,23 @@ export default function BhashaVoicePage() {
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 md:gap-4 p-4 md:p-8">
-            <Button 
-              onClick={handlePlayPause} 
-              size="lg" 
-              disabled={!text || isConverting} 
-              className="w-full sm:w-auto flex-grow bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all disabled:bg-green-600/50"
-              style={{ backgroundColor: 'hsl(var(--cta))' }}
-            >
-              {isConverting && audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
-              {isConverting && audioUrl ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
-            </Button>
-            <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
-              {isConverting && !audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
-              {isConverting && !audioUrl ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
-            </Button>
+          <CardFooter className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 md:gap-4 p-4 md:p-6">
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3 flex-grow">
+              <Button 
+                onClick={handlePlayPause} 
+                size="lg" 
+                disabled={!text || isConverting} 
+                className="w-full sm:w-auto flex-grow bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all disabled:bg-green-600/50"
+                style={{ backgroundColor: 'hsl(var(--cta))' }}
+              >
+                {isConverting && audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
+                {isConverting && audioUrl ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
+              </Button>
+              <Button onClick={() => handleConvert(false)} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
+                {isConverting && !audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Code className="mr-2 h-5 w-5" />}
+                {isConverting && !audioUrl ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button onClick={handleDownload} variant="outline" size="icon" disabled={!audioUrl || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg">
                 <Download className="h-5 w-5" />
@@ -385,7 +387,7 @@ export default function BhashaVoicePage() {
           </CardFooter>
         </Card>
       </main>
-      <footer className="w-full p-4 text-center text-muted-foreground">
+      <footer className="w-full p-4 text-center text-muted-foreground text-sm">
         <p className="flex items-center justify-center gap-2">
           <Code className="h-4 w-4"/>
           Developed with 💙 by BhashaVoice
@@ -403,11 +405,9 @@ export default function BhashaVoicePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>OK</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setShowNoCoinsAlert(false)}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   );
-
-    
