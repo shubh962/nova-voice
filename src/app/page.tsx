@@ -54,7 +54,7 @@ export default function BhashaVoicePage() {
   const { user, logout } = useAuth();
 
   const handleConvert = useCallback(async (playAfter = false) => {
-    if (!text) return;
+    if (!text || !user) return;
 
     if (coins < CONVERSION_COST) {
       setShowNoCoinsAlert(true);
@@ -72,10 +72,13 @@ export default function BhashaVoicePage() {
         voice: selectedVoiceName,
         lang: language
       });
-
+      
       const newCoinBalance = coins - CONVERSION_COST;
       setCoins(newCoinBalance);
-      localStorage.setItem('bhasha-voice-coins', newCoinBalance.toString());
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem(`bhasha-voice-coins-${user.uid}`, newCoinBalance.toString());
+      localStorage.setItem(`bhasha-voice-last-reset-${user.uid}`, today);
+
 
       if (response.audio) {
         setAudioUrl(response.audio);
@@ -116,7 +119,7 @@ export default function BhashaVoicePage() {
     } finally {
       setIsConverting(false);
     }
-  }, [text, language, selectedVoiceName, toast, speechRate, coins]);
+  }, [text, language, selectedVoiceName, toast, speechRate, coins, user]);
 
   const handlePlayPause = useCallback(async () => {
     if (coins < CONVERSION_COST && !audioUrl) {
@@ -142,12 +145,19 @@ export default function BhashaVoicePage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Note: In a real app, you'd fetch/store coins against the user.id in a database.
-    const savedCoins = localStorage.getItem('bhasha-voice-coins');
-    if (savedCoins !== null) {
-      setCoins(parseInt(savedCoins, 10));
-    } else {
-      localStorage.setItem('bhasha-voice-coins', INITIAL_COINS.toString());
+    if (user) {
+      const savedCoinsStr = localStorage.getItem(`bhasha-voice-coins-${user.uid}`);
+      const lastResetDate = localStorage.getItem(`bhasha-voice-last-reset-${user.uid}`);
+      const today = new Date().toISOString().split('T')[0];
+
+      if (savedCoinsStr === null || (lastResetDate && lastResetDate < today)) {
+        // New user or daily reset
+        setCoins(INITIAL_COINS);
+        localStorage.setItem(`bhasha-voice-coins-${user.uid}`, INITIAL_COINS.toString());
+        localStorage.setItem(`bhasha-voice-last-reset-${user.uid}`, today);
+      } else {
+        setCoins(parseInt(savedCoinsStr, 10));
+      }
     }
   }, [user]);
 
@@ -389,7 +399,7 @@ export default function BhashaVoicePage() {
               Not Enough Coins
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Aapke coins khatam ho gaye hain.
+              Aapke coins khatam ho gaye hain. Your coins will reset tomorrow.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
