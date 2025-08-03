@@ -101,7 +101,6 @@ export default function NovaVoicePage() {
   const performConversion = useCallback(async () => {
     if (!text || !user) return;
   
-    // This function now only handles the API call
     try {
       const response = await speak({
         text,
@@ -111,7 +110,6 @@ export default function NovaVoicePage() {
       return response;
     } catch (error: any) {
       console.error('Error converting text to speech:', error);
-      // Let the caller handle UI updates
       throw error;
     }
   }, [text, language, selectedVoiceName, user]);
@@ -182,7 +180,6 @@ export default function NovaVoicePage() {
       }
     };
   
-    // Show the ad
     setShowRewardedAd(true);
   };
   
@@ -197,7 +194,6 @@ export default function NovaVoicePage() {
         const newCoins = coins + REWARD_AMOUNT;
         handleSetCoins(newCoins);
         
-        // Execute the action that was waiting for the ad
         if (postAdActionRef.current) {
           postAdActionRef.current();
         }
@@ -207,12 +203,10 @@ export default function NovaVoicePage() {
           title: 'Ad Not Completed',
           description: 'You must watch the full ad to proceed.',
         });
-        // Reset conversion state if ad was not completed
         setIsConverting(false);
         conversionPromiseRef.current = null;
     }
     
-    // Always clear the post-ad action
     postAdActionRef.current = null;
   };
 
@@ -549,7 +543,7 @@ export default function NovaVoicePage() {
             <AlertDialogAction
               onClick={() => {
                 setShowNoCoinsAlert(false);
-                postAdActionRef.current = null; // Ensure no conversion happens
+                postAdActionRef.current = null;
                 setShowRewardedAd(true);
               }}
               className="bg-green-600 hover:bg-green-700"
