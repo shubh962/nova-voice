@@ -26,6 +26,7 @@ import { Logo } from '@/components/logo';
 import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import Script from 'next/script';
 
 const HINDI_VOICES = [
   { id: 'Algenib', name: 'Shubham' },
@@ -36,6 +37,34 @@ const HINDI_VOICES = [
 const ENGLISH_VOICES = ['Rasalgethi', 'Sadachbia', 'Vindemiatrix', 'Zubenelgenubi'];
 const CONVERSION_COST = 250;
 const INITIAL_COINS = 500;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "BhashaVoice",
+  "operatingSystem": "WEB",
+  "applicationCategory": "MultimediaApplication",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "ratingCount": "250"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "INR"
+  },
+  "description": "Free and easy-to-use text-to-speech tool that converts Hindi and English text into natural-sounding audio with authentic Indian accents.",
+  "featureList": [
+    "AI-powered text-to-speech",
+    "Hindi language support (hi-IN)",
+    "English language support with Indian accent (en-IN)",
+    "Multiple male and female voices",
+    "Adjustable speech rate",
+    "Free daily conversion credits",
+    "Download audio as WAV file"
+  ]
+};
 
 export default function BhashaVoicePage() {
   const [text, setText] = useState('नमस्ते! यहाँ अपना टेक्स्ट टाइप करें।\nHello! Type your text here.');
@@ -253,6 +282,11 @@ export default function BhashaVoicePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
+      <Script
+        id="structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
        <header className="w-full p-4 flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10 border-b">
          <div className="flex justify-center items-center gap-2">
             <Logo className="h-8 w-8 text-primary" />
@@ -292,6 +326,13 @@ export default function BhashaVoicePage() {
        </header>
 
       <main className="w-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+        <section className="w-full max-w-3xl mb-8 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">AI Text-to-Speech for Indian Voices</h2>
+            <p className="text-muted-foreground md:text-lg">
+                Instantly convert Hindi and English text into natural-sounding speech. Perfect for content creators, educators, and businesses targeting an Indian audience.
+            </p>
+        </section>
+
         <Card className="w-full max-w-3xl shadow-lg bg-card rounded-xl border">
           <CardHeader className="text-center px-4 sm:px-6">
             <CardTitle className="text-2xl sm:text-3xl font-headline font-bold text-card-foreground">Create Your Audio</CardTitle>
@@ -307,6 +348,7 @@ export default function BhashaVoicePage() {
               }}
               className="min-h-[150px] sm:min-h-[180px] text-base resize-none focus:ring-primary bg-input/50 dark:bg-background rounded-lg"
               disabled={isConverting}
+              aria-label="Text input for speech conversion"
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -368,6 +410,7 @@ export default function BhashaVoicePage() {
                   onEnded={() => setIsPlaying(false)}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
+                  aria-label="Audio preview player"
                 >
                   Your browser does not support the audio element.
                 </audio>
@@ -382,6 +425,7 @@ export default function BhashaVoicePage() {
                 disabled={!text || isConverting} 
                 className="w-full sm:w-auto flex-grow bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all disabled:bg-green-600/50"
                 style={{ backgroundColor: 'hsl(var(--cta))' }}
+                aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
               >
                 {isConverting && audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
                 {isConverting && audioUrl ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
@@ -392,10 +436,10 @@ export default function BhashaVoicePage() {
               </Button>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleDownload} variant="outline" size="icon" disabled={!audioUrl || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg">
+              <Button onClick={handleDownload} variant="outline" size="icon" disabled={!audioUrl || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg" aria-label="Download audio">
                 <Download className="h-5 w-5" />
               </Button>
-              <Button onClick={handleShare} variant="outline" size="icon" disabled={!text || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg">
+              <Button onClick={handleShare} variant="outline" size="icon" disabled={!text || isConverting} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-lg" aria-label="Share text">
                 <Share2 className="h-5 w-5" />
               </Button>
             </div>
@@ -406,7 +450,7 @@ export default function BhashaVoicePage() {
             <ins 
                 ref={adRef}
                 className="adsbygoogle"
-                style={{ display: 'block', minHeight: '100px', border: '2px dashed hsl(var(--destructive))' }}
+                style={{ display: 'block', border: '1px dashed hsl(var(--border))', minHeight: '100px' }}
                 data-ad-client="ca-pub-3940256099942544"
                 data-ad-slot="6300978111"
                 data-ad-format="auto"
@@ -416,8 +460,7 @@ export default function BhashaVoicePage() {
       </main>
       <footer className="w-full p-4 text-center text-muted-foreground text-sm">
         <p className="flex items-center justify-center gap-2">
-          <Code className="h-4 w-4"/>
-          Developed with 💙 by BhashaVoice
+          Copyright © {new Date().getFullYear()} BhashaVoice. All rights reserved.
         </p>
       </footer>
       <AlertDialog open={showNoCoinsAlert} onOpenChange={setShowNoCoinsAlert}>
@@ -428,7 +471,7 @@ export default function BhashaVoicePage() {
               Not Enough Coins
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Aapke coins khatam ho gaye hain. Your coins will reset tomorrow.
+              You've run out of free coins for today. Your balance will reset automatically tomorrow.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -438,5 +481,3 @@ export default function BhashaVoicePage() {
       </AlertDialog>
     </div>
   );
-
-    

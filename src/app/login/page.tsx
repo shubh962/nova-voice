@@ -11,7 +11,7 @@ export default function LoginPage() {
   const { signInWithGoogle } = useAuth();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
@@ -19,7 +19,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-bold text-foreground">BhashaVoice</h1>
           </div>
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to continue to BhashaVoice.</CardDescription>
+          <CardDescription>Sign in to continue to BhashaVoice and generate AI audio for free.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={signInWithGoogle} className="w-full" variant="outline">
