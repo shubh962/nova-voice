@@ -84,6 +84,8 @@ export default function NovaVoicePage() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const adRef = useRef<HTMLDivElement | null>(null);
+  const conversionPromiseRef = useRef<Promise<SpeakOutput> | null>(null);
+
   const { toast } = useToast();
   const { user, logout } = useAuth();
 
@@ -96,21 +98,14 @@ export default function NovaVoicePage() {
     }
   }, [user]);
 
-  const performConversion = useCallback(async (playAfter = false) => {
+  const performConversion = useCallback(async () => {
     if (!text || !user) return;
-
-    if (coins < CONVERSION_COST) {
-      setShowNoCoinsAlert(true);
-      return;
-    }
-
+  
     setIsConverting(true);
-    if (!playAfter) {
-      setAudioUrl(null);
-    }
-    
+    setAudioUrl(null);
+  
     try {
-      const response: SpeakOutput = await speak({
+      const response = await speak({
         text,
         voice: selectedVoiceName,
         lang: language
@@ -118,29 +113,10 @@ export default function NovaVoicePage() {
       
       const newCoinBalance = coins - CONVERSION_COST;
       handleSetCoins(newCoinBalance);
-
-      if (response.audio) {
-        setAudioUrl(response.audio);
-        if (!playAfter) {
-            toast({
-              title: "Conversion Successful",
-              description: `Deducted ${CONVERSION_COST} coins. Ready to play.`,
-            });
-        }
-        if (playAfter) {
-          setTimeout(() => {
-            if (audioRef.current) {
-              audioRef.current.src = response.audio;
-              applyPlaybackRate();
-              audioRef.current?.play();
-              setIsPlaying(true);
-            }
-          }, 100);
-        }
-      } else {
-        throw new Error("Audio data not received.");
-      }
+      
+      return response;
     } catch (error: any) {
+      setIsConverting(false); // Stop loading on error
       console.error('Error converting text to speech:', error);
       if (error.message && error.message.includes('ALL_KEYS_EXHAUSTED')) {
         toast({
@@ -155,17 +131,62 @@ export default function NovaVoicePage() {
           description: "Could not convert text to speech.",
         });
       }
-    } finally {
-      setIsConverting(false);
+      throw error; // Re-throw to be caught by the calling function
     }
-  }, [text, language, selectedVoiceName, toast, speechRate, coins, user, handleSetCoins]);
+  }, [text, language, selectedVoiceName, coins, user, handleSetCoins, toast]);
 
-  const handleConvert = useCallback(() => {
-    setAdRewardCallback(() => () => performConversion(false));
+
+  const startConversionAndShowAd = (playAfter: boolean) => {
+    if (coins < CONVERSION_COST) {
+        setShowNoCoinsAlert(true);
+        return;
+    }
+
+    // Start conversion in the background
+    conversionPromiseRef.current = performConversion();
+
+    // Show the ad
     setShowRewardedAd(true);
-  }, [performConversion]);
 
-  const handlePlayPause = useCallback(async () => {
+    // Set the callback for when the ad is done
+    setAdRewardCallback(() => async () => {
+        try {
+            const response = await conversionPromiseRef.current;
+            if (response?.audio) {
+                setAudioUrl(response.audio);
+                if (!playAfter) {
+                    toast({
+                      title: "Conversion Successful",
+                      description: `Deducted ${CONVERSION_COST} coins. Ready to play.`,
+                    });
+                } else {
+                    setTimeout(() => {
+                        if (audioRef.current) {
+                            audioRef.current.src = response.audio;
+                            applyPlaybackRate();
+                            audioRef.current?.play();
+                            setIsPlaying(true);
+                        }
+                    }, 100);
+                }
+            } else {
+                throw new Error("Audio data not received after conversion.");
+            }
+        } catch (error) {
+            // Error is already toasted in performConversion, just log it here
+            console.error("Failed to process conversion result:", error);
+        } finally {
+            setIsConverting(false);
+            conversionPromiseRef.current = null;
+        }
+    });
+  };
+
+  const handleConvert = () => {
+    startConversionAndShowAd(false);
+  };
+
+  const handlePlayPause = async () => {
     if (isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
@@ -177,21 +198,22 @@ export default function NovaVoicePage() {
         audioRef.current.play();
         setIsPlaying(true);
     } else {
-      setAdRewardCallback(() => () => performConversion(true));
-      setShowRewardedAd(true);
+      startConversionAndShowAd(true);
     }
-  }, [isPlaying, audioUrl, speechRate, performConversion]);
+  };
 
   const handleAdReward = () => {
     const newCoins = coins + REWARD_AMOUNT;
     handleSetCoins(newCoins);
     toast({
       title: 'Ad Completed!',
-      description: `You've earned ${REWARD_AMOUNT} coins! Your conversion will now start.`,
+      description: `You've earned ${REWARD_AMOUNT} coins!`,
     });
+    
     if (adRewardCallback) {
       adRewardCallback();
     }
+    
     setShowRewardedAd(false);
     setAdRewardCallback(null);
   };
@@ -223,6 +245,7 @@ export default function NovaVoicePage() {
 
   useEffect(() => {
     setAudioUrl(null);
+    setIsPlaying(false);
   }, [text, selectedVoiceName]);
 
   useEffect(() => {
@@ -233,12 +256,15 @@ export default function NovaVoicePage() {
   
   useEffect(() => {
     if (adRef.current && adRef.current.children.length === 0) {
+      const insElement = adRef.current.querySelector('.adsbygoogle');
+      if (insElement && insElement.getAttribute('data-ad-status') !== 'filled') {
         try {
             // @ts-ignore
             (window.adsbygoogle = window.adsbygoogle || []).push({});
         } catch (err) {
             console.error('adsbygoogle.push() error:', err);
         }
+      }
     }
   }, []);
 
@@ -303,7 +329,20 @@ export default function NovaVoicePage() {
       {showRewardedAd && (
         <RewardedAd
           onReward={handleAdReward}
-          onClose={() => setShowRewardedAd(false)}
+          onClose={() => {
+            setShowRewardedAd(false);
+            // If ad is closed without reward, check if conversion is running and handle it
+            if (conversionPromiseRef.current) {
+              toast({
+                variant: 'destructive',
+                title: 'Ad Not Completed',
+                description: 'You must watch the full ad to get the reward and audio.',
+              });
+              // Reset state
+              setIsConverting(false);
+              conversionPromiseRef.current = null;
+            }
+          }}
         />
       )}
       <Script
@@ -368,7 +407,6 @@ export default function NovaVoicePage() {
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
-                setAudioUrl(null);
               }}
               className="min-h-[150px] sm:min-h-[180px] text-base resize-none focus:ring-primary bg-input/50 dark:bg-background rounded-lg"
               disabled={isConverting}
@@ -451,12 +489,12 @@ export default function NovaVoicePage() {
                 style={{ backgroundColor: 'hsl(var(--cta))' }}
                 aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
               >
-                {isConverting && audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
-                {isConverting && audioUrl ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
+                {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
+                {isConverting ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
               </Button>
               <Button onClick={handleConvert} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
-                {isConverting && !audioUrl ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Code className="mr-2 h-5 w-5" />}
-                {isConverting && !audioUrl ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
+                {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Code className="mr-2 h-5 w-5" />}
+                {isConverting ? 'Converting...' : `Convert (-${CONVERSION_COST} Coins)`}
               </Button>
             </div>
             <div className="flex gap-2">
@@ -502,8 +540,8 @@ export default function NovaVoicePage() {
             <AlertDialogAction
               onClick={() => {
                 setShowNoCoinsAlert(false);
-                setAdRewardCallback(() => () => {}); // Empty callback, just earn coins
                 setShowRewardedAd(true);
+                setAdRewardCallback(() => () => {}); // Just earn coins, no conversion
               }}
               className="bg-green-600 hover:bg-green-700"
               style={{ backgroundColor: 'hsl(var(--cta))' }}
