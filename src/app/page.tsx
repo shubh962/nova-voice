@@ -179,6 +179,15 @@ export default function BhashaVoicePage() {
       audioRef.current.playbackRate = speechRate;
     }
   }, [speechRate]);
+  
+  useEffect(() => {
+    try {
+      // @ts-ignore
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   const applyPlaybackRate = () => {
     if (audioRef.current) {
@@ -386,6 +395,16 @@ export default function BhashaVoicePage() {
             </div>
           </CardFooter>
         </Card>
+        
+        <div className="w-full max-w-3xl mt-8">
+            <ins className="adsbygoogle"
+                style={{ display: 'block' }}
+                data-ad-client="ca-pub-3940256099942544"
+                data-ad-slot="6300978111"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
+        </div>
+
       </main>
       <footer className="w-full p-4 text-center text-muted-foreground text-sm">
         <p className="flex items-center justify-center gap-2">
