@@ -80,11 +80,11 @@ export default function NovaVoicePage() {
   const [coins, setCoins] = useState(INITIAL_COINS);
   const [showNoCoinsAlert, setShowNoCoinsAlert] = useState(false);
   const [showRewardedAd, setShowRewardedAd] = useState(false);
-  const [postAdAction, setPostAdAction] = useState<(() => void) | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const adRef = useRef<HTMLDivElement | null>(null);
   const conversionPromiseRef = useRef<Promise<SpeakOutput> | null>(null);
+  const postAdActionRef = useRef<(() => void) | null>(null);
 
   const { toast } = useToast();
   const { user, logout } = useAuth();
@@ -97,93 +97,127 @@ export default function NovaVoicePage() {
       localStorage.setItem(`nova-voice-last-reset-${user.uid}`, today);
     }
   }, [user]);
-
+  
   const performConversion = useCallback(async () => {
     if (!text || !user) return;
   
-    setIsConverting(true);
-    setAudioUrl(null);
-  
+    // This function now only handles the API call
     try {
       const response = await speak({
         text,
         voice: selectedVoiceName,
         lang: language
       });
-      
-      const newCoinBalance = coins - CONVERSION_COST;
-      handleSetCoins(newCoinBalance);
-      
       return response;
     } catch (error: any) {
-      setIsConverting(false); // Stop loading on error
       console.error('Error converting text to speech:', error);
-      if (error.message && error.message.includes('ALL_KEYS_EXHAUSTED')) {
-        toast({
-          variant: "destructive",
-          title: "Quota Exceeded",
-          description: "You've hit the daily free limit for speech generation. Please try again tomorrow.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Conversion Failed",
-          description: "Could not convert text to speech.",
-        });
-      }
-      throw error; // Re-throw to be caught by the calling function
+      // Let the caller handle UI updates
+      throw error;
     }
-  }, [text, language, selectedVoiceName, coins, user, handleSetCoins, toast]);
+  }, [text, language, selectedVoiceName, user]);
 
 
-  const startConversionAndShowAd = (playAfter: boolean) => {
+  const startConversionProcess = (playAfter: boolean) => {
+    if (!text || isConverting) return;
+  
     if (coins < CONVERSION_COST) {
-        setShowNoCoinsAlert(true);
-        return;
+      setShowNoCoinsAlert(true);
+      return;
     }
-
+  
+    setIsConverting(true);
+    setAudioUrl(null);
+    if (audioRef.current) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+    }
+  
     // Start conversion in the background
     conversionPromiseRef.current = performConversion();
-
+  
+    // Define what to do after the ad
+    postAdActionRef.current = async () => {
+      try {
+        const response = await conversionPromiseRef.current;
+        if (response?.audio) {
+          handleSetCoins(coins - CONVERSION_COST);
+          setAudioUrl(response.audio);
+          
+          if (playAfter) {
+            setTimeout(() => {
+              if (audioRef.current) {
+                audioRef.current.src = response.audio;
+                applyPlaybackRate();
+                audioRef.current?.play();
+                setIsPlaying(true);
+              }
+            }, 100);
+          } else {
+            toast({
+              title: "Conversion Successful",
+              description: `Deducted ${CONVERSION_COST} coins. Ready to play.`,
+            });
+          }
+        } else {
+          throw new Error("Audio data not received after conversion.");
+        }
+      } catch (error: any) {
+        if (error.message && error.message.includes('ALL_KEYS_EXHAUSTED')) {
+          toast({
+            variant: "destructive",
+            title: "Quota Exceeded",
+            description: "You've hit the daily free limit for speech generation. Please try again tomorrow.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Conversion Failed",
+            description: "Could not convert text to speech.",
+          });
+        }
+      } finally {
+        setIsConverting(false);
+        conversionPromiseRef.current = null;
+        postAdActionRef.current = null;
+      }
+    };
+  
     // Show the ad
     setShowRewardedAd(true);
-
-    // Set the action to perform after the ad is done
-    setPostAdAction(() => async () => {
-        try {
-            const response = await conversionPromiseRef.current;
-            if (response?.audio) {
-                setAudioUrl(response.audio);
-                if (!playAfter) {
-                    toast({
-                      title: "Conversion Successful",
-                      description: `Deducted ${CONVERSION_COST} coins. Ready to play.`,
-                    });
-                } else {
-                    setTimeout(() => {
-                        if (audioRef.current) {
-                            audioRef.current.src = response.audio;
-                            applyPlaybackRate();
-                            audioRef.current?.play();
-                            setIsPlaying(true);
-                        }
-                    }, 100);
-                }
-            } else {
-                throw new Error("Audio data not received after conversion.");
-            }
-        } catch (error) {
-            // Error is already toasted in performConversion, just log it here
-            console.error("Failed to process conversion result:", error);
-        } finally {
-            setIsConverting(false);
-            conversionPromiseRef.current = null;
+  };
+  
+  const handleAdComplete = (rewarded: boolean) => {
+    setShowRewardedAd(false);
+    
+    if (rewarded) {
+        toast({
+          title: 'Ad Completed!',
+          description: `You've earned ${REWARD_AMOUNT} coins!`,
+        });
+        const newCoins = coins + REWARD_AMOUNT;
+        handleSetCoins(newCoins);
+        
+        // Execute the action that was waiting for the ad
+        if (postAdActionRef.current) {
+          postAdActionRef.current();
         }
-    });
+    } else {
+        toast({
+          variant: 'destructive',
+          title: 'Ad Not Completed',
+          description: 'You must watch the full ad to proceed.',
+        });
+        // Reset conversion state if ad was not completed
+        setIsConverting(false);
+        conversionPromiseRef.current = null;
+    }
+    
+    // Always clear the post-ad action
+    postAdActionRef.current = null;
   };
 
   const handleConvert = () => {
-    startConversionAndShowAd(false);
+    startConversionProcess(false);
   };
 
   const handlePlayPause = async () => {
@@ -198,37 +232,8 @@ export default function NovaVoicePage() {
         audioRef.current.play();
         setIsPlaying(true);
     } else {
-      startConversionAndShowAd(true);
+      startConversionProcess(true);
     }
-  };
-
-  const handleAdComplete = (rewarded: boolean) => {
-    setShowRewardedAd(false);
-    
-    if (rewarded) {
-        const newCoins = coins + REWARD_AMOUNT;
-        handleSetCoins(newCoins);
-        toast({
-          title: 'Ad Completed!',
-          description: `You've earned ${REWARD_AMOUNT} coins!`,
-        });
-        
-        if (postAdAction) {
-          postAdAction();
-        }
-    } else {
-        toast({
-          variant: 'destructive',
-          title: 'Ad Not Completed',
-          description: 'You must watch the full ad to get the reward and audio.',
-        });
-        // Reset conversion state if ad was not completed
-        setIsConverting(false);
-        conversionPromiseRef.current = null;
-    }
-    
-    // Always clear the post-ad action
-    setPostAdAction(null);
   };
 
 
@@ -268,16 +273,23 @@ export default function NovaVoicePage() {
   }, [speechRate]);
   
   useEffect(() => {
-    if (adRef.current && adRef.current.children.length === 0) {
-      const insElement = adRef.current.querySelector('.adsbygoogle');
-      if (insElement && insElement.getAttribute('data-ad-status') !== 'filled') {
-        try {
-            // @ts-ignore
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-        } catch (err) {
-            console.error('adsbygoogle.push() error:', err);
+    const pushAd = () => {
+        if (adRef.current && adRef.current.children.length === 0) {
+            try {
+                // @ts-ignore
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+            } catch (err) {
+                console.error('adsbygoogle.push() error:', err);
+            }
         }
-      }
+    };
+
+    const adScript = document.querySelector('script[src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"]');
+    if (adScript && adScript.hasAttribute('data-loaded')) {
+        pushAd();
+    } else if (adScript) {
+        adScript.addEventListener('load', pushAd);
+        return () => adScript.removeEventListener('load', pushAd);
     }
   }, []);
 
@@ -487,7 +499,7 @@ export default function NovaVoicePage() {
                 aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
               >
                 {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />)}
-                {isConverting ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
+                {isConverting ? 'Loading...' : (isPlaying ? 'Pause' : (audioUrl ? 'Play' : 'Play'))}
               </Button>
               <Button onClick={handleConvert} size="lg" disabled={!text || isConverting || !hasEnoughCoins} className="w-full sm:w-auto flex-grow text-white font-bold rounded-lg bg-primary hover:bg-primary/90 transition-all">
                 {isConverting ? <Disc3 className="mr-2 h-5 w-5 animate-spin" /> : <Code className="mr-2 h-5 w-5" />}
@@ -509,8 +521,8 @@ export default function NovaVoicePage() {
             <ins 
                 className="adsbygoogle"
                 style={{ display: 'block' }}
-                data-ad-client="ca-pub-3940256099942544"
-                data-ad-slot="6300978111"
+                data-ad-client="ca-pub-3940256099942544" // Test ad client
+                data-ad-slot="6300978111" // Test ad slot
                 data-ad-format="auto"
                 data-full-width-responsive="true"></ins>
         </div>
@@ -529,7 +541,7 @@ export default function NovaVoicePage() {
               Not Enough Coins
             </AlertDialogTitle>
             <AlertDialogDescription>
-              You've run out of free coins for today. Watch a short ad to earn more or wait for your balance to reset tomorrow.
+              You need at least {CONVERSION_COST} coins to generate audio. Watch a short ad to earn {REWARD_AMOUNT} coins.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -537,17 +549,18 @@ export default function NovaVoicePage() {
             <AlertDialogAction
               onClick={() => {
                 setShowNoCoinsAlert(false);
+                postAdActionRef.current = null; // Ensure no conversion happens
                 setShowRewardedAd(true);
-                setPostAdAction(() => () => {}); // Just earn coins, no conversion
               }}
               className="bg-green-600 hover:bg-green-700"
               style={{ backgroundColor: 'hsl(var(--cta))' }}
             >
               <Clapperboard className="mr-2 h-5 w-5" />
-              Watch Ad
+              Watch Ad ({REWARD_AMOUNT} Coins)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   );
+}
