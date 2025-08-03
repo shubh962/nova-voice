@@ -186,8 +186,8 @@ export default function NovaVoicePage() {
     const newCoins = coins + REWARD_AMOUNT;
     handleSetCoins(newCoins);
     toast({
-      title: 'Reward Granted!',
-      description: `You've earned ${REWARD_AMOUNT} coins!`,
+      title: 'Ad Completed!',
+      description: `You've earned ${REWARD_AMOUNT} coins! Your conversion will now start.`,
     });
     if (adRewardCallback) {
       adRewardCallback();
@@ -517,3 +517,4 @@ export default function NovaVoicePage() {
     </div>
   );
 }
+
