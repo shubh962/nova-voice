@@ -50,6 +50,7 @@ export default function BhashaVoicePage() {
   const [showNoCoinsAlert, setShowNoCoinsAlert] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const adRef = useRef<HTMLElement | null>(null);
   const { toast } = useToast();
   const { user, logout } = useAuth();
 
@@ -181,6 +182,11 @@ export default function BhashaVoicePage() {
   }, [speechRate]);
   
   useEffect(() => {
+    // Check if an ad has already been loaded
+    if (adRef.current && adRef.current.getAttribute("data-ad-status") === "filled") {
+      return;
+    }
+    
     try {
       // @ts-ignore
       (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -397,7 +403,9 @@ export default function BhashaVoicePage() {
         </Card>
         
         <div className="w-full max-w-3xl mt-8">
-            <ins className="adsbygoogle"
+            <ins 
+                ref={adRef}
+                className="adsbygoogle"
                 style={{ display: 'block' }}
                 data-ad-client="ca-pub-3940256099942544"
                 data-ad-slot="6300978111"
