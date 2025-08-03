@@ -211,16 +211,13 @@ export default function BhashaVoicePage() {
   }, [speechRate]);
   
   useEffect(() => {
-    if (adRef.current && adRef.current.firstChild) {
-      // Ad already loaded
-      return;
-    }
-    
-    try {
-      // @ts-ignore
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error('adsbygoogle.push() error:', err);
+    if (adRef.current && adRef.current.children.length === 0) {
+        try {
+            // @ts-ignore
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (err) {
+            console.error('adsbygoogle.push() error:', err);
+        }
     }
   }, []);
 
@@ -449,7 +446,7 @@ export default function BhashaVoicePage() {
         <div className="w-full max-w-3xl mt-8" ref={adRef}>
             <ins 
                 className="adsbygoogle"
-                style={{ display: 'block', border: '1px solid #e53e3e', minHeight: '100px' }}
+                style={{ display: 'block', border: '1px solid #ff0000', minHeight: '100px' }}
                 data-ad-client="ca-pub-3940256099942544"
                 data-ad-slot="6300978111"
                 data-ad-format="auto"
@@ -481,5 +478,3 @@ export default function BhashaVoicePage() {
     </div>
   );
 }
-
-    
