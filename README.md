@@ -15,12 +15,6 @@ Nova Voice is a modern AI Voice Generator that lets you create ultra-realistic v
 
 ---
 
-## 📸 Screenshots
-
-> *(Insert screenshots or demo GIFs here if available)*
-
----
-
 ## 🛠️ Tech Stack
 
 - Frontend: React + Tailwind CSS  
@@ -28,7 +22,7 @@ Nova Voice is a modern AI Voice Generator that lets you create ultra-realistic v
 - Authentication: Firebase Auth  
 - Database: Firestore / MongoDB  
 - Cloud API: Google Cloud Text-to-Speech / ElevenLabs  
-- Deployment: Render / Vercel / Netlify  
+- Deployment: Vercel
 
 ---
 
