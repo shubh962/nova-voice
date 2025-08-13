@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   title: {
     default: `${APP_NAME} | Free AI Text-to-Speech (TTS) for Indian Voices`,
     template: `%s | ${APP_NAME}`,
+    
+    <meta name="google-site-verification" content="XhRtp6rO2MNQX-BucHlUxVhNLbBPfdis_RzXY5ZodlU" />
   },
   description: APP_DESCRIPTION,
   keywords: ['text to speech', 'TTS', 'AI voice', 'Indian accent', 'Hindi TTS', 'English TTS', 'free tts', 'online tts', 'NovaVoice', 'text to audio', 'voice generator'],
