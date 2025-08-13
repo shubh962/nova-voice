@@ -1,15 +1,38 @@
-<?xml version="1.0" encoding="UTF-8"?>
+// app/sitemap.xml/route.ts
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  const baseUrl = 'https://nova-voice.vercel.app';
+
+  const pages = [
+    '/',
+    '/login',
+    '/signup',
+    '/features',
+    '/pricing'
+    // Agar aur public pages hain to yahan add karo
+  ];
+
+  const urls = pages
+    .map(
+      (path) => `
+  <url>
+    <loc>${baseUrl}${path}</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>${path === '/' ? 'monthly' : 'yearly'}</changefreq>
+    <priority>${path === '/' ? '1.0' : '0.5'}</priority>
+  </url>`
+    )
+    .join('');
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://bhashavoice.com/</loc>
-    <lastmod>2024-08-04</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://bhashavoice.com/login</loc>
-    <lastmod>2024-08-04</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
-  </url>
-</urlset>
+${urls}
+</urlset>`;
+
+  return new NextResponse(sitemap, {
+    headers: {
+      'Content-Type': 'application/xml',
+    },
+  });
+}
